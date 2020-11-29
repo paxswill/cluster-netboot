@@ -22,7 +22,7 @@ cmdline=/rpi-cmdline.txt
 [pi2]
 # The Pi2 is going to be booting U-Boot from an SD card, then loading like the
 # other U-Boot nodes.
-kernel=u-boot-rpi2_32b.img
+kernel=u-boot.bin
 # Unset the initrd, U-Boot doesn't need it.
 ramfsfile=
 

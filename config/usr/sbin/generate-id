@@ -1,0 +1,113 @@
+#!/bin/sh
+
+set -e
+
+MODEL_PATH=/proc/device-tree/model
+SERIAL_NUMBER_PATH=/proc/device-tree/serial-number
+
+strip_null() {
+	sed 's/\(.*\)\x0/\1/' $1
+}
+
+# sed expressions converting a model name to a prefix
+# NOTE: this command has to be able to run under Busybox, so no lowercasing
+# extensions to sed are available.
+RPI_PREFIX='s/Raspberry Pi \([[:digit:]]\) Model \([^[:space:]]\+\) Rev.*/rpi\1\2/'
+BB_PREFIX='s/TI AM335x BeagleBone \([^[:space:]]\)[^[:space:]]\+.*$/bb\1/'
+
+get_prefix() {
+	UNAME="$(uname -m)"
+	case "$UNAME" in
+	arm*|aarch64)
+		prefix="$(strip_null ${MODEL_PATH} | \
+			sed "${RPI_PREFIX}" | \
+			sed "${BB_PREFIX}" | \
+			tr A-Z a-z)"
+		(
+			case "$prefix" in
+			rpi*|bb*)
+				printf "%s" "$prefix"
+				;;
+			*)
+				printf "unknown"
+				;;
+			esac
+		)
+		;;
+	*)
+		printf "%s" "$UNAME"
+		;;
+	esac
+}
+
+read_mac() {
+	if [ "$1" = "" ]; then
+		# Find an interface to use
+		if [ -e /sys/class/net/eth0 ]; then
+			NET_IF=eth0
+		else
+			NET_IFS="(echo /sys/class/net/* | sort)"
+			for IF in "$NET_IFS"; do
+				REAL_IF="$(readlink -f "$IF" || echo "")"
+				if [ -d "$REAL_IF" ] && [ "$(cat "$REAL_IF")" = "up" ]; then
+					NET_IF="$IF"
+					break;
+				fi
+			done
+		fi
+	else
+		NET_IF="$1"
+	fi
+	<"/sys/class/net/${NET_IF}/address" tr -d ":" | tr 'A-Z' 'a-z'
+}
+
+# There are two options for this function: Either return the serial number, or
+# the MAC address of the primary network interface. With no option given, the
+# primary network interface is used. If the argument "serial" is given, the
+# serial number is used. If an interface name is given, the MAC address of that
+# interface is used.
+get_id() {
+	case "$1" in
+	serial)
+		strip_null "${SERIAL_NUMBER_PATH}" | tr 'A-Z' 'a-z';;
+	"")
+		read_mac;;
+	*)
+		read_mac "$1";;
+	esac
+}
+
+generate_id() {
+	printf "%s-%s" "$(get_prefix)" "$(get_id ${1})"
+}
+
+BASE_COMMAND="$(basename $0)"
+# If run as generate-id, it just prints the generate ID.
+# If run as generate-hostname, it sets the hostname to the generated ID.
+# Both forms take an optional argument
+case "$1" in
+-h|--help)
+	echo "Usage: ${BASE_COMMAND} [serial|<network-interface>]"
+	echo
+	if [ "$BASE_COMMAND" = "generate-id" ]; then
+		echo "    Print a unique, stable identifier for this node."
+	else
+		echo "    Set the hostname of this node to a unique, stable identifier."
+	fi
+	echo
+	echo "    The optional argument may either be the string 'serial', or the"
+	echo "    name of a network interface. If 'serial', the serial number of"
+	echo "    the device will be used as the unique ID. If a network interface"
+	echo "    is given, then the MAC address of that interface will be used."
+	echo "    The default is to use the MAC address of eth0, or the first"
+	echo "    interface that is up when sorted alphabetically."
+	exit 0
+	;;
+*)
+	if [ "$BASE_COMMAND" = "generate-id" ]; then
+		printf "%s\n" "$(generate_id $@)"
+	elif [ "$BASE_COMMAND" = "generate-hostname" ]; then
+		hostname "$(generate_id)"
+	fi
+	;;
+esac
