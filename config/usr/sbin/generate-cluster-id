@@ -121,7 +121,7 @@ for ARG in $@; do
 	-h|--help)
 		echo "Usage: ${BASE_COMMAND} [OPTION]"
 		echo
-		if [ "$BASE_COMMAND" = "generate-id" ]; then
+		if [ "$BASE_COMMAND" = "generate-cluster-id" ]; then
 			echo "Print a unique, stable identifier for this node."
 		else
 			echo "Set the hostname of this node to a unique, stable identifier."
@@ -140,10 +140,10 @@ for ARG in $@; do
 --serial and --mac are mutually exclusive, as are --pretty and --no-pretty"
 		(
 			case "$BASE_COMMAND" in
-			generate-id)
+			generate-cluster-id)
 				echo "The default options are '--mac --no-pretty'"
 				;;
-			generate-hostname)
+			set-cluster-node-hostname)
 				echo "The default options are '--mac --pretty'"
 				;;
 			esac
@@ -173,20 +173,16 @@ UNIQUE_ID="$(get_id $ID_KIND)"
 # ADD_PREFIX.
 BASE_COMMAND="$(basename $0)"
 case "$BASE_COMMAND" in
-generate-id)
+generate-cluster-id)
 	if [ "${ADD_PREFIX:-n}" = "y" ]; then
 		UNIQUE_ID="$(get_prefix)-${UNIQUE_ID}"
 	fi
+	echo "$UNIQUE_ID"
 	;;
-generate-hostname)
+set-cluster-node-hostname)
 	if [ "${ADD_PREFIX:-y}" = "y" ]; then
 		UNIQUE_ID="$(get_prefix)-${UNIQUE_ID}"
 	fi
+	hostname "$UNIQUE_ID"
 	;;
 esac
-
-if [ "$BASE_COMMAND" = "generate-id" ]; then
-	echo "$UNIQUE_ID"
-elif [ "$BASE_COMMAND" = "generate-hostname" ]; then
-	hostname "$UNIQUE_ID"
-fi
