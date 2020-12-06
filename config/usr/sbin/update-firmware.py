@@ -729,6 +729,8 @@ def main() -> None:
     except (ValueError, FileNotFoundError) as exc:
         log.error("%s", exc)
         sys.exit(-1)
+    except KeyboardInterrupt:
+        sys.exit(-1)
     if bootloader_difference:
         sys.exit(1)
     else:
