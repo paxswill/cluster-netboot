@@ -30,30 +30,6 @@ logging.basicConfig(
 )
 
 
-# Reimplementing BufferedIO, probably badly...
-def read_exactly(
-    handle: io.BinaryIO,
-    length: int
-) -> bytearray:
-    starting_offset = handle.tell()
-    remaining = length
-    buffer = bytearray()
-    # Try to use read1, which is only on buffered instances
-    while remaining > 0:
-        data = handle.read(remaining)
-        if data is None:
-            log.debug("Empty read() call, spinning...")
-            continue
-        elif len(data) == 0:
-            log.warning("Unexpected EOF reached on %s", handle)
-            return buffer
-        else:
-            log.debug("Read 0x%x bytes from %s", len(data), handle)
-            remaining -= len(data)
-            buffer.extend(data)
-    return buffer
-
-
 def find_mbr_first_partition(
     stream: io.BinaryIO,
 ) -> typing.Union[int, None]:
@@ -77,7 +53,7 @@ def find_mbr_first_partition(
     # Skip forward to the boot signature and check that first
     MBR_BOOT_SIG_OFFSET = 0x1fe
     stream.seek(MBR_BOOT_SIG_OFFSET, os.SEEK_CUR)
-    boot_sig_buf = read_exactly(stream, 2)
+    boot_sig_buf = stream.read(2)
     boot_sig = struct.unpack("<2B", boot_sig_buf)
     if boot_sig != (0x55, 0xaa):
         log.warning(
@@ -104,7 +80,7 @@ def find_mbr_first_partition(
     mbr_entry_format = "<B3sB3s2I"
     lowest_starting_sector = 0xffffffff
     for i in range(4):
-        entry_buf = read_exactly(stream, 16)
+        entry_buf = stream.read(16)
         partition_entry = struct.unpack( mbr_entry_format, entry_buf)
         # All zeros is an empty entry which we can skip
         if not any(entry_buf):
@@ -144,7 +120,7 @@ def get_mlo_toc_size(
     # content could vary.
     toc_hasher = hashlib.sha256()
     TOC_LEN = 512
-    toc_data = read_exactly(stream, TOC_LEN)
+    toc_data = stream.read(TOC_LEN)
     if toc_data is None:
         return None
     toc_hasher.update(toc_data)
@@ -158,7 +134,7 @@ def get_mlo_toc_size(
         return None
     # Relying on the read position of stream being where it was left from
     # reading the TOC
-    image_len_buf = read_exactly(stream, 4)
+    image_len_buf = stream.read(4)
     if image_len_buf is None:
         return None
     image_len = struct.unpack_from("<I", image_len_buf)[0]
@@ -175,7 +151,7 @@ def get_u_boot_legacy_size(
     returned. If no image is found, ``None`` is returned.
     """
     U_BOOT_HEADER_LEN = 64
-    header_buf = read_exactly(stream, U_BOOT_HEADER_LEN)
+    header_buf = stream.read(U_BOOT_HEADER_LEN)
     if header_buf is None:
         return None
     # This format spec is based on the U-Boot sources, specifically the
@@ -202,7 +178,7 @@ def get_u_boot_fit_size(
     starting_offset = stream.tell()
     # The first 8 bytes of a flattened device tree (FDT) are a magic number, and
     # the total size of the FDT.
-    buf = read_exactly(stream, 8)
+    buf = stream.read(8)
     if buf is None:
         return None
     magic, fdt_len = struct.unpack(">2I", buf)
@@ -223,7 +199,7 @@ def get_u_boot_fit_size(
         os.close(write_pipe)
     else:
         os.close(read_pipe)
-        fdt_data = read_exactly(stream, fdt_len)
+        fdt_data = stream.read(fdt_len)
         os.write(write_pipe, fdt_data) # type: ignore
         os.close(write_pipe)
         sys.exit()
@@ -293,53 +269,6 @@ class OpenMode(enum.Enum):
             return other.value in self.value
         return NotImplemented
 
-
-@contextlib.contextmanager
-def open_raw_device(
-    name: os.PathLike,
-    mode: OpenMode = OpenMode.READ
-) -> typing.Iterator[io.BinaryIO]:
-    """A context manager for opening raw block devices.
-
-    It takes the name of a device and opens it in a manner that ensures (as much
-    as possible) that all data is written to disk as soon as possible.
-    """
-    if not os.path.isabs(name):
-        path = os.path.join("/dev", name)
-    else:
-        path = name
-    if not os.path.exists(path):
-        raise ValueError(f"Device '{path}' cannot be found.")
-    if mode is OpenMode.READ:
-        flags = os.O_RDONLY
-        # If we're only reading, use a buffered stream. Otherwise use a raw
-        # stream.
-        buffer_mode = -1
-    elif mode is OpenMode.WRITE:
-        flags = os.O_WRONLY
-        buffer_mode = 0
-    elif mode is OpenMode.READ_WRITE:
-        flags = os.O_RDWR
-        buffer_mode = 0
-    else:
-        raise ValueError("Unknown open mode: %s", mode)
-    try:
-        fd = os.open(path, flags)
-        os.set_blocking(fd, True)
-        file_obj = os.fdopen(
-            fd,
-            mode=mode.value + "b",
-            buffering=buffer_mode,
-            closefd=False
-        )
-        log.debug("Opened FD %d for path %s", fd, path)
-        yield file_obj # type: ignore
-    finally:
-        file_obj.flush()
-        file_obj.close()
-        os.fsync(fd)
-        os.close(fd)
-        log.debug("Closed FD %d for path %s", fd, path)
 
 @functools.total_ordering
 class ImageKind(enum.Enum):
@@ -416,10 +345,10 @@ class FirmwareImage(object):
 
     @functools.cached_property
     def hexdigest(self) -> str:
-        with open_raw_device(self.device) as raw_device:
-            raw_device.seek(self.offset)
+        with open(self.device, "rb") as device:
+            device.seek(self.offset)
             hasher = hashlib.sha256(
-                read_exactly(raw_device, self.size)
+                device.read(self.size)
             )
         return hasher.hexdigest()
 
@@ -491,14 +420,14 @@ class FirmwareImage(object):
         )
 
 
-def find_images(device_name: str) -> typing.Collection[FirmwareImage]:
+def find_images(device_path: os.PathLike) -> typing.Collection[FirmwareImage]:
     images = []
-    with open_raw_device(device_name, OpenMode.READ) as device:
+    with open(device_path, "rb") as device:
         for offset in (0, 0x20000, 0x40000, 0x60000):
             device.seek(offset, os.SEEK_SET)
             if image_size := get_mlo_toc_size(device):
                 images.append(FirmwareImage( # type: ignore
-                    device_name,
+                    device_path,
                     offset,
                     ImageKind.MLO,
                     image_size
@@ -507,7 +436,7 @@ def find_images(device_name: str) -> typing.Collection[FirmwareImage]:
                 device.seek(offset, os.SEEK_SET)
                 if image_size := get_u_boot_size(device):
                     images.append(FirmwareImage( # type: ignore
-                        device_name,
+                        device_path,
                         offset,
                         ImageKind.UBOOT,
                         image_size
@@ -518,7 +447,7 @@ def find_images(device_name: str) -> typing.Collection[FirmwareImage]:
 def compare_images(
     new_mlo: FirmwareImage,
     new_u_boot: FirmwareImage,
-    devices: typing.Iterable[str],
+    device_paths: typing.Iterable[os.PathLike],
 ) -> typing.Sequence[FirmwareImage]:
     """Update BeagleBone Black/Green firmware.
 
@@ -530,25 +459,17 @@ def compare_images(
     # The full U-Boot image is then (possibly) at one of the later loader
     # locations.
     images_to_update = []
-    for device_name in devices:
-        try:
-            with open_raw_device(device_name) as device:
-                lowest_partition_start = find_mbr_first_partition(device)
-                # Just not handling the case where there's no MBR
-                if lowest_partition_start is None:
-                    log.info(
-                        "No MBR found on device '%s', skipping.",
-                        device_name
-                    )
-                    continue
-            images = find_images(device_name)
-        except ValueError:
-            # ValueError from open_raw_device, for non-existent device names
-            continue
-        if not images:
-            log.debug("No firmware images found on device '%s'", device_name)
-            continue
-        for image in images:
+    for device_path in device_paths:
+        with open(device_path, "rb") as device:
+            lowest_partition_start = find_mbr_first_partition(device)
+            # Just not handling the case where there's no MBR
+            if lowest_partition_start is None:
+                log.info(
+                    "No MBR found on device '%s', skipping.",
+                    device_path
+                )
+                continue
+        for image in  find_images(device_path):
             if image.offset == 0:
                 # This error should not be hit
                 log.error("%s would overlap the MBR", image)
@@ -576,7 +497,7 @@ def compare_images(
                     {
                         "kind": image.kind.value,
                         "path": new_image.path,
-                        "device_name": device_name,
+                        "device_name": device_path,
                         "offset": image.offset,
                     }
                 )
@@ -591,6 +512,8 @@ def compare_images(
                     image.hexdigest
                 )
                 images_to_update.append(image)
+        else:
+            log.debug("No firmware images found on device '%s'", device_path)
     return images_to_update
 
 
@@ -736,10 +659,13 @@ def main() -> None:
         "--device", "-d",
         action="append",
         help=(
-            "Specify which MMC devices to check. If the device cannot be "
-            "found, it is skipped (default: mmcblk0 and mmcblk1)."
+            "Specify which MMC devices to check. Can be specified multiple "
+            "times. (default: /dev/mmcblk0 and /dev/mmcblk1, if present)."
         ),
-        default=["mmcblk0", "mmcblk1"],
+        default=list(filter(
+            os.path.exists,
+            ("/dev/mmcblk0", "/dev/mmcblk1")
+        )),
         dest="devices",
     )
     # Logging arguments
