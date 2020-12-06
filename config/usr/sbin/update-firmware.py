@@ -541,11 +541,11 @@ def update_raw_beaglebone(
     action: MainAction,
 ) -> bool:
     if not os.path.exists(new_mlo_path):
-        raise ValueError(
+        raise FileNotFoundError(
             f"MLO file ({new_mlo_path}) does not exist."
         )
     if not os.path.exists(new_u_boot_path):
-        raise ValueError(
+        raise FileNotFoundError(
             f"U-Boot file ({new_u_boot_path}) does not exist."
         )
     # Check that the files given are actually the appropriate kind of files.
@@ -726,7 +726,7 @@ def main() -> None:
             args.devices,
             args.action,
         )
-    except ValueError as exc:
+    except (ValueError, FileNotFoundError) as exc:
         log.error("%s", exc)
         sys.exit(-1)
     if bootloader_difference:
