@@ -201,13 +201,13 @@ def get_u_boot_fit_size(
         os.close(write_pipe)
         sys.exit()
     decompile = subprocess.Popen(
-        ["dtc", "-I", "dtb", "-O", "dts", "-o", "-", "-"],
+        ["/usr/bin/dtc", "-I", "dtb", "-O", "dts", "-o", "-", "-"],
         stdin=read_pipe,
         stdout=subprocess.PIPE,
         close_fds=True,
     )
     yaml_convert = subprocess.Popen(
-        ["dtc", "-I", "dts", "-O", "yaml", "-o", "-", "-"],
+        ["/usr/bin/dtc", "-I", "dts", "-O", "yaml", "-o", "-", "-"],
         stdin=decompile.stdout,
         stdout=subprocess.PIPE,
     )
