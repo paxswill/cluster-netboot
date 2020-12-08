@@ -46,7 +46,7 @@ def find_mbr_first_partition(
     starting_offset = stream.tell()
     if starting_offset != 0:
         log.warning(
-            "The starting offset of %s is not 0! (actual value is 0x%x)",
+            "The starting offset of %s is not 0! (actual value is %#x)",
             stream,
             starting_offset,
         )
@@ -60,7 +60,7 @@ def find_mbr_first_partition(
     if boot_sig != (0x55, 0xaa):
         log.warning(
             "Invalid boot signature (%s) found.",
-            ", ".join(f"0x{n:x}" for n in boot_sig)
+            ", ".join(f"{n:#x}" for n in boot_sig)
         )
         return None
     stream.seek(starting_offset, os.SEEK_SET)
@@ -93,14 +93,14 @@ def find_mbr_first_partition(
             # Output the integers as 0xF00 and the bytes in hex, but without
             # any prefix.
             tuple(
-                n.hex(" ") if isinstance(n, bytes) else f"0x{n:x}"
+                n.hex(" ") if isinstance(n, bytes) else f"{n:#x}"
                 for n in partition_entry
             )
         )
         if partition_entry[4] < lowest_starting_sector:
             lowest_starting_sector = partition_entry[4]
             log.debug(
-                "New lowest starting sector of %s (0x%x)",
+                "New lowest starting sector of %s (%#x)",
                 lowest_starting_sector,
                 lowest_starting_sector,
             )
@@ -125,7 +125,7 @@ def get_mlo_toc_size(
     TOC_LEN = 512
     toc_hasher = hashlib.sha256(stream.read(TOC_LEN))
     toc_hex = toc_hasher.hexdigest()
-    log.debug("TOC hash for %s at 0x%x: %s", stream, starting_offset, toc_hex)
+    log.debug("TOC hash for %s at %#x: %s", stream, starting_offset, toc_hex)
     expected_hash = (
         "21a542439d495f829f448325a75a2a377bf84c107751fe77a0aeb321d1e23868"
     ) 
@@ -428,8 +428,8 @@ class FirmwareImage(object):
     def __repr__(self):
         # defining repr so that the size and offset are in hex
         return (
-            f"{self.__class__.__name__}('{self.device}', 0x{self.offset:x}, "
-            f"ImageKind.{self.kind.name}, 0x{self.size:x})"
+            f"{self.__class__.__name__}('{self.device}', {self.offset:#x}, "
+            f"ImageKind.{self.kind.name}, {self.size:#x})"
         )
 
 
@@ -514,7 +514,7 @@ def compare_images(
                 raise ValueError("Unknown image kind %s", image.kind)
             if new_image @ image >= lowest_partition_start:
                 log.error(
-                    "%s would overlap the partition starting at 0x%x",
+                    "%s would overlap the partition starting at %#x",
                     image
                 )
                 continue
@@ -523,7 +523,7 @@ def compare_images(
                 log.info(
                     (
                         "New %(kind)s (%(path)s) does not match existing "
-                        "%(kind)s on %(device_name)s at offset 0x%(offset)x"
+                        "%(kind)s on %(device_name)s at offset %(offset)#x"
                     ),
                     {
                         "kind": image.kind.value,
@@ -614,7 +614,7 @@ def update_raw_beaglebone(
     outdated_images.sort(key=lambda i: (i.kind, i.device, i.offset))
     for image in outdated_images:
         destination_message = (
-            f"{image.kind.value} at 0x{image.offset:x} on {image.device}"
+            f"{image.kind.value} at {image.offset:#x} on {image.device}"
         )
         source_message = (
             f"{new_images[image.kind].path} "
