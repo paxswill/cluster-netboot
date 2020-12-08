@@ -52,6 +52,8 @@ def find_mbr_first_partition(
         )
     # Skip forward to the boot signature and check that first
     MBR_BOOT_SIG_OFFSET = 0x1fe
+    # Because there's a mix of absolute and relative seeking in this function,
+    # all seek() calls in it are explicit in which kind they are.
     stream.seek(MBR_BOOT_SIG_OFFSET, os.SEEK_CUR)
     boot_sig_buf = stream.read(2)
     boot_sig = struct.unpack("<2B", boot_sig_buf)
@@ -71,8 +73,8 @@ def find_mbr_first_partition(
     # * CHS start (3 bytes, packed format)
     # * partition type (1 byte)
     # * CHS end (3 bytes, packed format)
-    # * LBA start (4 bytes, int)
-    # * Sector count (4 bytes, int)
+    # * LBA start (4 bytes, unsigned int)
+    # * Sector count (4 bytes, unsigned int)
     #
     # All values are little-endian. The CHS values are packed, but we're only
     # interested in the LBA of the starting sector, so I don't care about the
@@ -81,13 +83,15 @@ def find_mbr_first_partition(
     lowest_starting_sector = 0xffffffff
     for i in range(4):
         entry_buf = stream.read(16)
-        partition_entry = struct.unpack( mbr_entry_format, entry_buf)
         # All zeros is an empty entry which we can skip
         if not any(entry_buf):
             continue
+        partition_entry = struct.unpack(mbr_entry_format, entry_buf)
         log.debug(
             "Partition entry %d values: %s",
             i,
+            # Output the integers as 0xF00 and the bytes in hex, but without
+            # any prefix.
             tuple(
                 n.hex(" ") if isinstance(n, bytes) else f"0x{n:x}"
                 for n in partition_entry
@@ -118,12 +122,8 @@ def get_mlo_toc_size(
     # entire TOC. The contents are fixed, even though a quick read of the
     # documentation looks like it might be used in other places where the
     # content could vary.
-    toc_hasher = hashlib.sha256()
     TOC_LEN = 512
-    toc_data = stream.read(TOC_LEN)
-    if toc_data is None:
-        return None
-    toc_hasher.update(toc_data)
+    toc_hasher = hashlib.sha256(stream.read(TOC_LEN))
     toc_hex = toc_hasher.hexdigest()
     log.debug("TOC hash for %s at 0x%x: %s", stream, starting_offset, toc_hex)
     expected_hash = (
@@ -132,11 +132,12 @@ def get_mlo_toc_size(
     if toc_hex != expected_hash:
         log.debug("TOC hash at %s, offset 0x%x did not match", stream, starting_offset)
         return None
+    # Read the size of the image right after the TOC. The first 4 bytes are a
+    # little-endian unsigned int representing the size of the image in bytes.
+    # The size does not include the TOC size.
     # Relying on the read position of stream being where it was left from
-    # reading the TOC
+    # reading the TOC.
     image_len_buf = stream.read(4)
-    if image_len_buf is None:
-        return None
     image_len = struct.unpack_from("<I", image_len_buf)[0]
     return image_len + TOC_LEN
 
@@ -152,8 +153,6 @@ def get_u_boot_legacy_size(
     """
     U_BOOT_HEADER_LEN = 64
     header_buf = stream.read(U_BOOT_HEADER_LEN)
-    if header_buf is None:
-        return None
     # This format spec is based on the U-Boot sources, specifically the
     # definition of image_header_t in include/image.h
     header_format = ">7I4B32s"
@@ -179,8 +178,6 @@ def get_u_boot_fit_size(
     # The first 8 bytes of a flattened device tree (FDT) are a magic number, and
     # the total size of the FDT.
     buf = stream.read(8)
-    if buf is None:
-        return None
     magic, fdt_len = struct.unpack(">2I", buf)
     if magic != 0xd00dfeed:
         log.debug(
@@ -200,7 +197,7 @@ def get_u_boot_fit_size(
     else:
         os.close(read_pipe)
         fdt_data = stream.read(fdt_len)
-        os.write(write_pipe, fdt_data) # type: ignore
+        os.write(write_pipe, fdt_data)
         os.close(write_pipe)
         sys.exit()
     decompile = subprocess.Popen(
@@ -256,20 +253,6 @@ def get_u_boot_size(
         return get_u_boot_fit_size(stream)
 
 
-class OpenMode(enum.Enum):
-
-    READ = "r"
-
-    WRITE = "w"
-
-    READ_WRITE = "rw"
-
-    def __contains__(self, other):
-        if isinstance(other, OpenMode):
-            return other.value in self.value
-        return NotImplemented
-
-
 @functools.total_ordering
 class ImageKind(enum.Enum):
 
@@ -280,6 +263,10 @@ class ImageKind(enum.Enum):
     UBOOT = "U-Boot image"
 
     def __lt__(self, other):
+        """Define an ordering for `ImageKind`.
+
+        Because there's only two kinds of image, it's just "MLO before UBOOT".
+        """
         if not isinstance(other, type(self)):
             return NotImplemented
         # MLO before U-Boot
@@ -299,6 +286,7 @@ class FirmwareImage(object):
     #: The kind of image it is.
     kind: ImageKind
 
+    #: The size of the image.
     size: int
 
     @typing.overload
@@ -308,20 +296,22 @@ class FirmwareImage(object):
         offset: int,
         kind: ImageKind,
         size: int,
-    ):
-        """Create a `FilesystemImage` for a raw image on a block device."""
-        pass
+    ): ...
 
     @typing.overload
     def __init__(
         self,
         device: os.PathLike,
         kind: ImageKind,
-    ):
-        """Create a `FirmwareImage` representing a file on a filesystem."""
-        pass
+    ): ...
 
     def __init__(self, *args, **kwargs):
+        """Represent a firmware image.
+
+        The source data for an image can either be a discrete file on a
+        filesystem, or a range of bytes (defined as an offset and length) on a
+        raw block device.
+        """
         attr_names = ("device", "offset", "kind", "size")
         if len(args) == 4:
             for attr_name, arg in zip(attr_names, args):
@@ -345,6 +335,10 @@ class FirmwareImage(object):
 
     @functools.cached_property
     def hexdigest(self) -> str:
+        """A secure hash of the data for this firmware image.
+
+        Currently this is the SHA256 of the data.
+        """
         with open(self.device, "rb") as device:
             device.seek(self.offset)
             hasher = hashlib.sha256(
@@ -354,17 +348,27 @@ class FirmwareImage(object):
 
     @property
     def path(self):
+        """An alias for `device`.
+
+        This is just to make it more logical to refer to firmware images that
+        exist as files on a filesystem instead of byte ranges on an device.
+        """
         return self.device
 
-    def __eq__(self, other):
+    def __eq__(self, other: FirmwareImage) -> bool:
+        """Compare a firmware image to another firmware image.
+
+        Only the `hexdigest` of both objects are compared.
+        """
         if isinstance(other, FirmwareImage):
             return self.hexdigest == other.hexdigest
-        elif isinstance(other, int):
-            return self.offset == other
         else:
             return NotImplemented
 
-    def __lt__(self, other):
+    def __lt__(
+        self,
+        other: typing.Union[FirmwareImage, int]
+    ) -> bool:
         if isinstance(other, FirmwareImage):
             return self.offset + self.size < other.offset
         elif isinstance(other, int):
@@ -372,7 +376,10 @@ class FirmwareImage(object):
         else:
             return NotImplemented
 
-    def __le__(self, other):
+    def __le__(
+        self,
+        other: typing.Union[FirmwareImage, int]
+    ) -> bool:
         if isinstance(other, FirmwareImage):
             return self.offset + self.size <= other.offset
         elif isinstance(other, int):
@@ -380,7 +387,10 @@ class FirmwareImage(object):
         else:
             return NotImplemented
 
-    def __gt__(self, other):
+    def __gt__(
+        self,
+        other: typing.Union[FirmwareImage, int]
+    ) -> bool:
         if isinstance(other, FirmwareImage):
             return self.offset + self.size > other.offset
         elif isinstance(other, int):
@@ -388,7 +398,10 @@ class FirmwareImage(object):
         else:
             return NotImplemented
 
-    def __ge__(self, other):
+    def __ge__(
+        self,
+        other: typing.Union[FirmwareImage, int]
+    ) -> bool:
         if isinstance(other, FirmwareImage):
             return self.offset + self.size >= other.offset
         elif isinstance(other, int):
@@ -420,7 +433,25 @@ class FirmwareImage(object):
         )
 
 
+# Copy the FirmwareImage overlap docstring to the ordering dunder methods
+_firmware_image_comparison_docstring = \
+"""Compare the byte range of an image to an offset.
+
+When ``other`` is an integer, the sum of ``self.offset`` and
+``self.size`` is compared against ``other``. When ``other`` is another
+`FirmwareImage`, the `offset` is taken, and then the comparison is done
+as if an integer was given.
+
+The intention is for this operation to be used to see if an image would
+overlap aither another image, or a given offset.
+"""
+for method_name in ("__lt__", "__le__", "__gt__", "__ge__"):
+    method = getattr(FirmwareImage, method_name)
+    method.__doc__ = _firmware_image_comparison_docstring
+
+
 def find_images(device_path: os.PathLike) -> typing.Collection[FirmwareImage]:
+    """Find firmware images on a raw block device."""
     images = []
     with open(device_path, "rb") as device:
         for offset in (0, 0x20000, 0x40000, 0x60000):
@@ -512,17 +543,19 @@ def compare_images(
                     image.hexdigest
                 )
                 images_to_update.append(image)
-        else:
-            log.debug("No firmware images found on device '%s'", device_path)
     return images_to_update
 
 
 class MainAction(enum.Enum):
+    """The type of action to perform when invoked as a command."""
 
+    #: Log which changes would be made, but don't change anything.
     DRY_RUN = enum.auto()
 
+    #: Interactively confirm each change before making it.
     INTERACTIVE = enum.auto()
 
+    #: Make all changes without prompting for confirmation.
     FORCE = enum.auto()
 
 
@@ -530,6 +563,7 @@ def copy_raw(
     new_image: FirmwareImage,
     old_image: FirmwareImage,
 ):
+    """Copy the contents of one image over another image."""
     # TODO:
     pass
 
@@ -537,9 +571,23 @@ def copy_raw(
 def update_raw_beaglebone(
     new_mlo_path: os.PathLike,
     new_u_boot_path: os.PathLike,
-    devices: typing.Iterable[str],
+    devices: typing.Iterable[os.PathLike],
     action: MainAction,
 ) -> bool:
+    """Update a raw MMC device with updated firmware images.
+
+    The source images are checked that they are able to be used as boot images,
+    then the given devices are searched for existing images. For any images
+    found, they are compared against the appropriate source image (MLO images to
+    MLO images, U-Boot to U-Boot). If the images on device are different, they
+    are (optionally) overwritten with the source images. The partition table is
+    also examined to ensure that the new images will not overlap with the
+    beginning of the first partition.
+
+    This function will raise `FileNotFoundError` for missing source files and
+    `ValueError` when the given files are not the right kind of image.
+    It returns a boolean for if there were outdated images present.
+    """
     if not os.path.exists(new_mlo_path):
         raise FileNotFoundError(
             f"MLO file ({new_mlo_path}) does not exist."
@@ -564,7 +612,6 @@ def update_raw_beaglebone(
     outdated_images = list(compare_images(new_mlo, new_u_boot, devices))
     # Sort the images by kind, then device, then by offset
     outdated_images.sort(key=lambda i: (i.kind, i.device, i.offset))
-
     for image in outdated_images:
         destination_message = (
             f"{image.kind.value} at 0x{image.offset:x} on {image.device}"
