@@ -108,14 +108,19 @@ def find_mbr_first_partition(
     return SECTOR_SIZE * lowest_starting_sector
 
 
+class InvalidFirmwareImage(Exception):
+    """The base exception for when a firmware image is invalid."""
+    pass
+
+
 def get_mlo_toc_size(
     stream: io.BinaryIO
-) -> typing.Union[int, None]:
+) -> int:
     """Determine the size of a possible MLO image.
 
     The given stream is checked starting from its current position. If a valid
     TOC is found there, the total size in bytes of the MLO image is returned. If
-    no image is found, ``None`` is returned.
+    the data found is not an MLO image, `InvalidFirmwareImage` is raised.
     """
     starting_offset = stream.tell()
     # Instead of manually verifying each field, I'm just going to hash the
@@ -130,8 +135,17 @@ def get_mlo_toc_size(
         "21a542439d495f829f448325a75a2a377bf84c107751fe77a0aeb321d1e23868"
     ) 
     if toc_hex != expected_hash:
-        log.debug("TOC hash at %s, offset 0x%x did not match", stream, starting_offset)
-        return None
+        msg = (
+            f"TOC hash at {stream}, offset {starting_offset:#x} did not match",
+        )
+        log.debug(msg)
+        raise InvalidFirmwareImage(msg)
+    else:
+        log.debug(
+            "TOC hash at %s, offset %#x matched",
+            stream,
+            starting_offset
+        )
     # Read the size of the image right after the TOC. The first 4 bytes are a
     # little-endian unsigned int representing the size of the image in bytes.
     # The size does not include the TOC size.
@@ -142,14 +156,19 @@ def get_mlo_toc_size(
     return image_len + TOC_LEN
 
 
+class InvalidUBootImage(InvalidFirmwareImage):
+    """Exception for when a U-Boot image is of the wrong type."""
+    pass
+
+
 def get_u_boot_legacy_size(
     stream: io.BinaryIO,
-) -> typing.Union[int, None]:
+) -> int:
     """Determine the size of a possible U-Boot legacy image.
 
     The given stream is checked starting from its current position. If a valid
     U-Boot legacy image is found there, the total size in bytes of the image is
-    returned. If no image is found, ``None`` is returned.
+    returned. If no image is found, an `InvalidFirmwareImage` exception will be raised.
     """
     U_BOOT_HEADER_LEN = 64
     header_buf = stream.read(U_BOOT_HEADER_LEN)
@@ -157,22 +176,34 @@ def get_u_boot_legacy_size(
     # definition of image_header_t in include/image.h
     header_format = ">7I4B32s"
     parsed_header = struct.unpack(header_format, header_buf)
-    # The only fields we care about are the magic number (at index 0) and the
-    # image data size (at index 3).
+    # The fields we care about are the magic number (index 0), image data size
+    # (index 3), operating system (index 7), and image type (index 9).
     UBOOT_LEGACY_MAGIC = 0x27051956
     if parsed_header[0] != UBOOT_LEGACY_MAGIC:
-        return None
+        raise InvalidFirmwareImage("Incorrect legacy U-Boot magic number")
+    # OS code 17 is the code for a U-Boot firmware image.
+    if parsed_header[7] != 17:
+        raise InvalidUBootImage(
+            "U-Boot image found, but with the incorrect OS (OS type "
+            f"{parsed_header[7]})"
+        )
+    # Image type 5 is a firmware image, which is what is used for U-Boot images.
+    if parsed_header[9] != 5:
+        raise InvalidUBootImage(
+            "U-Boot image found, but with the incorrect image type (image type "
+            f"{parsed_header[9]})"
+        )
     return parsed_header[3] + U_BOOT_HEADER_LEN
 
 
 def get_u_boot_fit_size(
     stream: io.BinaryIO,
-) -> typing.Union[int, None]:
+) -> int:
     """Determine the size of a possible U-Boot FIT image.
 
     The given stream is checked starting from its current position. If a valid
     U-Boot FIT image is found there, the total size in bytes of the image is
-    returned. If no image is found, ``None`` is returned.
+    returned. If no image is found, an `InvalidFirmwareImage` exception will be raised.
     """
     starting_offset = stream.tell()
     # The first 8 bytes of a flattened device tree (FDT) are a magic number, and
@@ -180,12 +211,10 @@ def get_u_boot_fit_size(
     buf = stream.read(8)
     magic, fdt_len = struct.unpack(">2I", buf)
     if magic != 0xd00dfeed:
-        log.debug(
-            "Magic number for %s at 0x%x does not match for an FDT",
-            stream,
-            starting_offset
+        raise InvalidFirmwareImage(
+            f"Magic number for {stream} at {starting_offset:#x} does not match"
+            " for an FDT"
         )
-        return None
     # Extract the FDT from the device (and only the FDT, which we can do because
     # the size is now known). Feed it into dtc to decompile it, then convert the
     # DTS to YAML for easier parsing.
@@ -221,36 +250,39 @@ def get_u_boot_fit_size(
         images = next(iter(fit_yaml))[0]["images"]
         largest_offset = 0
         offset_size = 0
+        uboot_image_found = False
         for image_data in images.values():
             # The data-[size,offset] properties have only one value
             image_offset = image_data["data-offset"][0][0]
             image_size = image_data["data-size"][0][0]
+            # Wrap `None` in an list to emulate how DTS has almost everything as
+            # a list.
+            image_type = image_data.get("type", [None])[0]
+            image_os = image_data.get("os", [None])[0]
             log.debug(
-                "Found image with offset 0x%x and size %d",
+                # Stringifying image_type and image_os so that integers turn
+                # into base-10 strings, and `None` turns into "None"
+                "Found image with offset %#x, size %d, type %s, OS %s",
                 image_offset,
                 image_size,
+                str(image_type),
+                str(image_os),
             )
             if image_offset > largest_offset:
                 largest_offset = image_offset
                 offset_size = image_size
+            if image_type == "firmware" and image_os == "u-boot":
+                uboot_image_found = True
     except (KeyError, IndexError) as exc:
-        log.exception("Invalid access in FIT parsing")
-        return None
+        raise InvalidFirmwareImage("Invalid access in FIT parsing") from exc
+    if not uboot_image_found:
+        raise InvalidUBootImage(
+            "No U-Boot firmware sub-image contained within FIT image."
+        )
     # The full size is now the FDT size + (the largest image offset + the size
     # of that image, rounded up to the nearest 4-byte boundary)
     extra_len = largest_offset + offset_size
     return fdt_len + (4 * math.ceil(extra_len / 4))
-
-
-def get_u_boot_size(
-    stream: io.BinaryIO,
-) -> typing.Union[int, None]:
-    starting_offset = stream.tell()
-    if legacy_size := get_u_boot_legacy_size(stream):
-        return legacy_size
-    else:
-        stream.seek(starting_offset, os.SEEK_SET)
-        return get_u_boot_fit_size(stream)
 
 
 @functools.total_ordering
@@ -453,23 +485,29 @@ for method_name in ("__lt__", "__le__", "__gt__", "__ge__"):
 def find_images(device_path: os.PathLike) -> typing.Collection[FirmwareImage]:
     """Find firmware images on a raw block device."""
     images = []
+    image_finders = (
+        get_mlo_toc_size,
+        get_u_boot_legacy_size,
+        get_u_boot_fit_size
+    )
     with open(device_path, "rb") as device:
         for offset in (0, 0x20000, 0x40000, 0x60000):
-            device.seek(offset, os.SEEK_SET)
-            if image_size := get_mlo_toc_size(device):
-                images.append(FirmwareImage( # type: ignore
-                    device_path,
-                    offset,
-                    ImageKind.MLO,
-                    image_size
-                ))
-            else:
-                device.seek(offset, os.SEEK_SET)
-                if image_size := get_u_boot_size(device):
-                    images.append(FirmwareImage( # type: ignore
+            for get_size in image_finders:
+                device.seek(offset)
+                try:
+                    image_size = get_size(device)
+                except InvalidFirmwareImage as exc:
+                    # Just log these exceptions, they're expected
+                    log.debug("%s", exc)
+                else:
+                    if get_size is get_mlo_toc_size:
+                        image_kind = ImageKind.MLO
+                    else:
+                        image_kind = ImageKind.UBOOT
+                    images.append(FirmwareImage(
                         device_path,
                         offset,
-                        ImageKind.UBOOT,
+                        image_kind,
                         image_size
                     ))
     return images
@@ -500,7 +538,10 @@ def compare_images(
                     device_path
                 )
                 continue
-        for image in  find_images(device_path):
+        images = find_images(device_path)
+        if not images:
+            log.debug("No firmware images found on device '%s'", device_path)
+        for image in images:
             if image.offset == 0:
                 # This error should not be hit
                 log.error("%s would overlap the MBR", image)
@@ -598,10 +639,28 @@ def update_raw_beaglebone(
         )
     # Check that the files given are actually the appropriate kind of files.
     with open(new_mlo_path, "rb") as mlo_file:
-        if not get_mlo_toc_size(mlo_file):
-            raise ValueError(f"{new_mlo_path} does not have a valid TOC")
+        try:
+            get_mlo_toc_size(mlo_file)
+        except InvalidFirmwareImage as exc:
+            log.debug("%s", exc)
+            raise ValueError(
+                f"{new_mlo_path} does not have a valid TOC"
+            ) from exc
     with open(new_u_boot_path, "rb") as u_boot_file:
-        if not get_u_boot_size(u_boot_file):
+        for get_size in (get_u_boot_fit_size, get_u_boot_legacy_size):
+            try:
+                get_size(u_boot_file)
+            except InvalidUBootImage as exc:
+                log.debug("%s", exc)
+                raise ValueError(
+                    f"{new_u_boot_path} does not contain a U-Boot firmware"
+                    " image"
+                ) from exc
+            except InvalidFirmwareImage:
+                pass
+            else:
+                break
+        else:
             raise ValueError(f"{new_u_boot_path} is not a valid U-Boot image")
     new_mlo = FirmwareImage(new_mlo_path, ImageKind.MLO)
     new_u_boot = FirmwareImage(new_u_boot_path, ImageKind.UBOOT)
