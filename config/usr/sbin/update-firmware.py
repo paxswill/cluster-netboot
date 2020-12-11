@@ -12,7 +12,6 @@ import logging
 import math
 import os
 import os.path
-import shutil
 import struct
 import subprocess
 import sys
@@ -138,7 +137,6 @@ def get_mlo_toc_size(
         msg = (
             f"TOC hash at {stream}, offset {starting_offset:#x} did not match",
         )
-        log.debug(msg)
         raise InvalidFirmwareImage(msg)
     else:
         log.debug(
@@ -695,7 +693,8 @@ def update_raw_beaglebone(
                     f"{new_u_boot_path} does not contain a U-Boot firmware"
                     " image"
                 ) from exc
-            except InvalidFirmwareImage:
+            except InvalidFirmwareImage as exc:
+                log.debug("Not a U-Boot image because: %s", exc)
                 pass
             else:
                 break
@@ -712,7 +711,8 @@ def update_raw_beaglebone(
     outdated_images.sort(key=lambda i: (i.kind, i.device, i.offset))
     for image in outdated_images:
         destination_message = (
-            f"{image.kind.value} at {image.offset:#x} on {image.device}"
+            f"{image.kind.value} at {image.offset:#x} "
+            f"({image.size} bytes) on {image.device}"
         )
         source_message = (
             f"{new_images[image.kind].path} "
