@@ -776,7 +776,10 @@ def update_raw_beaglebone(
     return bool(outdated_images)
 
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
+    # This is pulled into a separate function to keep main() at a mangeable
+    # length.
     parser = argparse.ArgumentParser(
         description="Check and update AM335x MMC bootloaders",
         # TODO: add extra help describing the exit status
@@ -866,20 +869,24 @@ def main() -> None:
         help="Suppress all output.",
         dest="log_level",
     )
-    args = parser.parse_args()
-    # Set log level first
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    # Update the log level first
     log_levels = {
         -1: logging.CRITICAL,
         0: logging.WARNING,
         1: logging.INFO,
         2: logging.DEBUG,
     }
-    log.level = log_levels.get(
+    log.setLevel(log_levels.get(
         # Clamp the value to a max of 2
         min(2, args.log_level),
         # If all else fails, give a default
         logging.WARNING
-    )
+    ))
     # We need root to access block devices directly. Do this check after parsing
     # args so that the help message can be printed as a normal user.
     if os.geteuid() != 0:
