@@ -12,6 +12,7 @@ import logging
 import math
 import os
 import os.path
+import re
 import struct
 import subprocess
 import sys
@@ -29,8 +30,51 @@ logging.basicConfig(
 )
 
 
+DEFAULT_SECTOR_SIZE = 512
+
+
+def get_block_size(device: os.PathLike) -> int:
+    """Look up the device block size (in bytes) in sysfs.
+
+    This value is also used as the sector size in this script. If there's an
+    error in looking up the4 value, 512 is used.
+    """
+    device_path: typing.Union[str, bytes]
+    if isinstance(device, os.PathLike):
+        device_path = device.__fspath__()
+    else:
+        device_path = device
+    if isinstance(device_path, str):
+        device_regex = r"(?:/dev/)?(\w+)"
+    elif isinstance(device_path, bytes):
+        device_regex = rb"(?:/dev/)?(\w+)"
+    else:
+        # This should never be reached, as the spec for os.PathLike is that
+        # __fspath__() returns either str or bytes.
+        raise RuntimeError(
+            "__fspath__() returned something other than str or bytes"
+        )
+    match = re.match(device_regex, device_path)
+    # The only way this assertion should fail is if the string given includes
+    # whitespace, or has no characters at all.
+    assert match is not None
+    device_name = match.group(1)
+    block_size_path = f"/sys/class/block/{device_name}/queue/logical_block_size"
+    if not os.path.exists(block_size_path):
+        log.warning(
+            "'%s' is not a block device, defaulting to %d-byte sectors",
+            device,
+            DEFAULT_SECTOR_SIZE
+        )
+        log.debug("'%s' does not exist", block_size_path)
+        return DEFAULT_SECTOR_SIZE
+    with open(block_size_path, "r") as sys_block_size:
+        return int(sys_block_size.read().strip())
+
+
 def find_mbr_first_partition(
     stream: io.BinaryIO,
+    sector_size: int = DEFAULT_SECTOR_SIZE,
 ) -> typing.Union[int, None]:
     """Find the offset of the first partition in an MBR.
 
@@ -103,8 +147,7 @@ def find_mbr_first_partition(
                 lowest_starting_sector,
                 lowest_starting_sector,
             )
-    SECTOR_SIZE = 512
-    return SECTOR_SIZE * lowest_starting_sector
+    return sector_size * lowest_starting_sector
 
 
 class InvalidFirmwareImage(Exception):
@@ -532,8 +575,12 @@ def compare_images(
     # locations.
     images_to_update = []
     for device_path in device_paths:
+        sector_size = get_block_size(device_path)
+        log.debug("Using %d-byte sectors for %s", sector_size, device_path)
         with open(device_path, "rb") as device:
-            lowest_partition_start = find_mbr_first_partition(device)
+            lowest_partition_start = find_mbr_first_partition(
+                device, sector_size
+            )
             # Just not handling the case where there's no MBR
             if lowest_partition_start is None:
                 log.info(
@@ -595,20 +642,6 @@ def copy_raw(
     target_image: FirmwareImage,
 ):
     """Copy the contents of one image over another image."""
-    # First we get to figure out the block size of the destination
-    dev, device_name = os.path.split(target_image.device)
-    if dev != "/dev":
-        log.warning(
-            "'%s' is not a raw device, defaulting to 512 bytes",
-            target_image.device
-        )
-        block_size = 512
-    else:
-        block_size_path = (
-            f"/sys/class/block/{device_name}/queue/logical_block_size"
-        )
-        with open(block_size_path, "r") as sys_block_size:
-            block_size = int(sys_block_size.read().strip())
     with open(source_image.device, "rb") as source:
         source.seek(source_image.offset)
         fd = os.open(target_image.device, os.O_WRONLY)
