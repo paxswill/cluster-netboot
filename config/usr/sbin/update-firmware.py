@@ -196,6 +196,11 @@ def get_u_boot_legacy_size(
     return parsed_header[3] + U_BOOT_HEADER_LEN
 
 
+def align_up(n: int, align_to: int) -> int:
+    """Return `n`, rounded up to `align_to`."""
+    return align_to * math.ceil(n / align_to)
+
+
 def get_u_boot_fit_size(
     stream: io.BinaryIO,
 ) -> int:
@@ -282,7 +287,7 @@ def get_u_boot_fit_size(
     # The full size is now the FDT size + (the largest image offset + the size
     # of that image, rounded up to the nearest 4-byte boundary)
     extra_len = largest_offset + offset_size
-    return fdt_len + (4 * math.ceil(extra_len / 4))
+    return align_up(fdt_len, 4) + align_up(extra_len, 4)
 
 
 @functools.total_ordering
