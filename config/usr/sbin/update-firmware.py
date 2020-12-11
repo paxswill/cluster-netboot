@@ -685,6 +685,7 @@ def update_raw_beaglebone(
             ) from exc
     with open(new_u_boot_path, "rb") as u_boot_file:
         for get_size in (get_u_boot_fit_size, get_u_boot_legacy_size):
+            u_boot_file.seek(0)
             try:
                 get_size(u_boot_file)
             except InvalidUBootImage as exc:
