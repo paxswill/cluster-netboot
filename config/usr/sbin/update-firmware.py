@@ -592,6 +592,49 @@ def compare_images(
     return images_to_update
 
 
+def copy_raw(
+    source_image: FirmwareImage,
+    target_image: FirmwareImage,
+):
+    """Copy the contents of one image over another image."""
+    # First we get to figure out the block size of the destination
+    dev, device_name = os.path.split(target_image.device)
+    if dev != "/dev":
+        log.warning(
+            "'%s' is not a raw device, defaulting to 512 bytes",
+            target_image.device
+        )
+        block_size = 512
+    else:
+        block_size_path = (
+            f"/sys/class/block/{device_name}/queue/logical_block_size"
+        )
+        with open(block_size_path, "r") as sys_block_size:
+            block_size = int(sys_block_size.read().strip())
+    with open(source_image.device, "rb") as source:
+        source.seek(source_image.offset)
+        fd = os.open(target_image.device, os.O_WRONLY)
+        try:
+            os.set_blocking(fd, True)
+            os.lseek(fd, target_image.offset, os.SEEK_SET)
+            # And now we rely on sendfile() aligning things properly
+            write_size = os.sendfile(
+                fd,
+                source.fileno(),
+                None,
+                source_image.size
+            )
+            assert write_size == source_image.size
+        except OSError:
+            # reraise it immediately; this except-clause is to satisfy the
+            # grammar so we can have an else-clause
+            raise
+        else:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+
+
 class MainAction(enum.Enum):
     """The type of action to perform when invoked as a command."""
 
@@ -603,15 +646,6 @@ class MainAction(enum.Enum):
 
     #: Make all changes without prompting for confirmation.
     FORCE = enum.auto()
-
-
-def copy_raw(
-    new_image: FirmwareImage,
-    old_image: FirmwareImage,
-):
-    """Copy the contents of one image over another image."""
-    # TODO:
-    pass
 
 
 def update_raw_beaglebone(
