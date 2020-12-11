@@ -21,7 +21,7 @@ import yaml
 
 
 # Using a slightly different name for the logger to keep it Python-safe
-log = logging.getLogger("update_firmware")
+log = logging.getLogger("am335x_updater")
 logging.basicConfig(
     level=logging.WARNING,
     format="%(levelname)s: %(message)s",
