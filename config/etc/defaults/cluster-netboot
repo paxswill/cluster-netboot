@@ -28,7 +28,7 @@
 #CLUSTER_UBOOT_SCRIPT_NAME=boot.scr
 
 # If you want to customize the U-Boot boot script, edit the file
-# /etc/cluster-netboot/u-boot-script.txt and possible
+# /etc/cluster-netboot/u-boot-script.txt and possibly
 # /etc/cluster-netboot/combined-image.its as well. It is also possible to set
 # options on a per-architecture and per-device basis by creating specially named
 # uEnv.txt files in the root of the netboot directory. See the source of the

@@ -10,6 +10,8 @@ CLUSTER_NFS_SERVER=
 # The base of the exported path for the cluster filesystems.
 CLUSTER_NFS_BASE_PATH=/mnt/cluster
 
+# Load /etc/defaults/cluster-netboot after the simple settings, but before the
+# settings that depend on earlier settings.
 if [ -f /etc/defaults/cluster-netboot ]; then
     . /etc/defaults/cluster-netboot
 else
@@ -31,6 +33,8 @@ else
     if [ -f "${_LOADER_RELATIVE_ROOT}/etc/defaults/cluster-netboot" ]; then
         . "${_LOADER_RELATIVE_ROOT}/etc/defaults/cluster-netboot"
     fi
+    unset _LOADER_FULL_PATH
+    unset _LOADER_RELATIVE_ROOT
 fi
 
 
@@ -105,5 +109,7 @@ ro \
 ip=dhcp \
 rootwait \
 fixrtc \
-panic=10${CLUSTER_RASPI_EXTRA_CMDLINE:+ }${CLUSTER_RASPI_EXTRA_CMDLINE} \
+panic=10${CLUSTER_RASPI_EXTRA_CMDLINE:+ }${CLUSTER_RASPI_EXTRA_CMDLINE:-} \
 "}"
+# The extra parameter expansion at the end there is to ensure an unset variable
+# isn't expanded.

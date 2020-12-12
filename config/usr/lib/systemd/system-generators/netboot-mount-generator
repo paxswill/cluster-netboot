@@ -2,7 +2,7 @@
 
 set -e
 
-# systemd mount generator for creating the -boot-netboot.mount files based on
+# systemd mount generator for creating the boot-netboot.mount files based on
 # the defaults configuration.
 
 OUTPUT_DIR="$1"
