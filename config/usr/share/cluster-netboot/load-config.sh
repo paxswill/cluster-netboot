@@ -33,9 +33,6 @@ else
     fi
 fi
 
-# If we've booted a cluster node, there's sometimes a need to the actual,
-# resolved NFS server name.
-# TODO: Add a CLUSTER_NFS_SERVER_RESOLVED variable
 
 # The exported path to the root filesystems. If not set, defaults to
 # ${CLUSTER_NFS_BASE_PATH}/root
@@ -47,6 +44,38 @@ CLUSTER_NFS_ROOT_PATH="${CLUSTER_NFS_ROOT_PATH:=${CLUSTER_NFS_BASE_PATH}/root}"
 # "${CLUSTER_NFS_ROOT_PATH}/${ARCH}".
 CLUSTER_NFS_ROOT_ARMHF_PATH="${CLUSTER_NFS_ROOT_ARMHF_PATH:-${CLUSTER_NFS_ROOT_PATH}/armhf}"
 CLUSTER_NFS_ROOT_ARM64_PATH="${CLUSTER_NFS_ROOT_ARM64_PATH:-${CLUSTER_NFS_ROOT_PATH}/arm64}"
+
+# Because not every usage of this script will need the resolved NFS server, and
+# this lookup requires shelling out to some external commands, it's being kept
+# behind a function.
+cluster_nfs_server_resolved() {
+    # There is only one (optional) argument, the path to the root filesystem. If
+    # it's not given, the variable 'rootmnt' is used (if it's set and not null),
+    # falling back to '/'. 'rootmnt' is defined in initramfs scripts, which is
+    # one of the places this script may be sourced.
+    # The return value is the hostname *or* IP address of the NFS server. If /
+    # is not mounted over NFS, an empty string is returned.
+    if [ "$1" = "" ]; then
+        _ROOT_MOUNTPOINT="${rootmnt:-/}"
+    else
+        _ROOT_MOUNTPOINT="$1"
+    fi
+    # This regex has two capture groups, the first for the combination of NFS
+    # server and exported path, and the second for the mount options. They're
+    # not used currently, but are being kept for now.
+    _NFS_REGEX="^\([^ ]\+\) ${_ROOT_MOUNTPOINT} nfs \(.*\) [0-9] [0-9]"
+    # Use _NFS_REGEX (but ignoring the capture groups) to find the mount entry
+    # for the root filesystem
+    # -o and -m are extensions to POSIX grep, but are present in busybox grep.
+    _NFS_ROOT="$(grep -o -m 1 -e "$_NFS_REGEX" /proc/mounts)"
+    if [ "$_NFS_ROOT" = "" ]; then
+        return ""
+    fi
+    echo "${_NFS_REGEX%%:*}"
+    unset _ROOT_MOUNTPOINT
+    unset _NFS_REGEX
+    unset _NFS_ROOT
+}
 
 # The exported path to the netboot root. If not set, defaults to
 # ${CLUSTER_NFS_BASE_PATH}/netboot
