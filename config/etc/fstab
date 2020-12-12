@@ -1,0 +1,10 @@
+# Per-node /var, for systemd to not freak out when shutting down
+LABEL=instance-var	/var	ext4	defaults	0	0
+
+# Various tmpfs mounts
+tmpfs	/tmp	tmpfs	nodev,nosuid	0	0
+tmpfs	/etc/iscsi/nodes	tmpfs	nodev,nosuid	0	0
+tmpfs	/etc/iscsi/send_targets	tmpfs	nodev,nosuid	0	0
+
+# Per-node boot firmware. Optional, as some nodes don't have it.
+LABEL=boot	/boot/firmware	vfat	defaults,auto,nofail	0	0
