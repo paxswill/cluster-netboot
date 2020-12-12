@@ -10,6 +10,13 @@ CLUSTER_NFS_SERVER=
 # The base of the exported path for the cluster filesystems.
 CLUSTER_NFS_BASE_PATH=/mnt/cluster
 
+# The date and domain name used for the iSCSI *initiator*. The default is
+# "2020-12.com.paxswill.cluster-netboot", but it is encouraged that it be set to
+# a site-specific value. See RFC 3720, section 3.2.6.3.1 for the formatting.
+# This is *just* the date and domain portion, "iqn." and a node-specific ID will
+# be added automatically.
+CLUSTER_ISCSI_INITIATOR=2020-12.com.paxswill.cluster-netboot
+
 # Load /etc/defaults/cluster-netboot after the simple settings, but before the
 # settings that depend on earlier settings.
 if [ -f /etc/defaults/cluster-netboot ]; then
@@ -37,6 +44,17 @@ else
     unset _LOADER_RELATIVE_ROOT
 fi
 
+# The date and domain for the iSCSI *target*. If not set, the value from
+# CLUSTER_ISCSI_INITIATOR will be used. The same guidelines for that value also
+# apply here.
+CLUSTER_ISCSI_TARGET="${CLUSTER_ISCSI_TARGET:=${CLUSTER_ISCSI_INITIATOR}}"
+
+# The iSCSI server to use for mounting each node's /var. If left at the default
+# (an empty string), the same value as CLUSTER_NFS_SERVER will be used. If
+# CLUSTER_NFS_SERVER is also left at it's default value (also an empty string),
+# the same hostname or IP address that was used to mount the root filesystem
+# will be used (which is typically provided via DHCP).
+CLUSTER_ISCSI_SERVER="${CLUSTER_ISCSI_SERVER:-${CLUSTER_NFS_SERVER}}"
 
 # The exported path to the root filesystems. If not set, defaults to
 # ${CLUSTER_NFS_BASE_PATH}/root
