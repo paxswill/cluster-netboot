@@ -1,0 +1,10 @@
+[Unit]
+Description=Ensure that /var/rancher is created.
+ConditionKernelCommandLine=nfsroot
+ConditionKernelCommandLine=ro
+ConditionPathIsMountPoint=/var
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=mkdir -p /var/rancher
