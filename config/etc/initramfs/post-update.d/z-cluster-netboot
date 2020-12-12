@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ -n "$INITRAMFS_TOOLS_KERNEL_HOOK" ]; then
+	echo "cluster-netboot: deferring update via initramfs-tools (hook will be called later by the kernel package)"
+	exit 0
+fi
+
+DEB_MAINT_PARAMS=configure /etc/kernel/postinst.d/z-cluster-netboot $1
