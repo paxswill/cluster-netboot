@@ -1,1 +1,2 @@
 cluster-netboot		usr/share
+initramfs-tools		usr/share
