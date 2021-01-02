@@ -1,3 +1,4 @@
+sbin			usr
 cluster-netboot		usr/share
 initramfs-tools		usr/share
 conf			etc
