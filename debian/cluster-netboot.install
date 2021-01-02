@@ -1,4 +1,5 @@
 cluster-netboot		usr/share
 initramfs-tools		usr/share
+conf			etc
 kernel-hooks		etc/kernel
 initramfs-hooks		etc/initramfs
