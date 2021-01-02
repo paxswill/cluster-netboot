@@ -1,0 +1,8 @@
+[Unit]
+Description=iSCSI send_targets record-keeping
+
+[Mount]
+What=tmpfs
+Where=/etc/iscsi/send_targets
+Type=tmpfs
+Options=mode=0700,nodev

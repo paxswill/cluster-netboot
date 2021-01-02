@@ -1,0 +1,8 @@
+[Unit]
+Description=iSCSI nodes record-keeping
+
+[Mount]
+What=tmpfs
+Where=/etc/iscsi/nodes
+Type=tmpfs
+Options=mode=0700,nodev
