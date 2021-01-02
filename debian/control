@@ -9,13 +9,8 @@ Vcs-Browser: https://github.com/paxswill/cluster-netboot
 Vcs-Git: https://github.com/paxswill/cluster-netboot.git
 
 Package: cluster-netboot
-Architecture: any
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
-
-
-Package: cluster-netboot
-Architecture: armhf arm64
+Architecture: all
+Multi-Arch: allowed
 Section: admin
 Priority: optional
 Description: Set up a cluster of netbooting single-board computers
