@@ -1,4 +1,5 @@
 sbin			usr
+system-generators	usr/lib
 cluster-netboot		usr/share
 initramfs-tools		usr/share
 conf			etc
