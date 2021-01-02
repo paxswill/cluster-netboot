@@ -56,6 +56,6 @@ msg_info "Creating U-Boot boot script."
 # 32 and 64 bit architectures in one file, I'm creating the fancy new FIT. It's
 # basically a device tree-style description of the image.
 mkimage \
-	-f /etc/cluster-netboot/combined-image.its \
+	-f /usr/share/cluster-netboot/combined-image.its \
 	"${NETBOOTDIR}/${CLUSTER_UBOOT_SCRIPT_NAME}" \
 	>&2

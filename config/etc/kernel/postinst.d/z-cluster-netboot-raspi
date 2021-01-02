@@ -63,7 +63,7 @@ os_prefix=${KERNELDIR}
 EOF
 
 msg_info "Copying confg.txt to ${NETBOOTDIR}"
-CONFIG_TXT="/etc/cluster-netboot/raspi-config.txt"
+CONFIG_TXT="/usr/share/cluster-netboot/raspi-config.txt"
 if ! [ -f "${CONFIG_TXT}" ]; then
 	msg_err "Missing '${CONFIG_TXT}'!" 4
 fi
