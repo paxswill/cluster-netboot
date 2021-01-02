@@ -23,3 +23,14 @@
 #override_dh_auto_configure:
 #	dh_auto_configure -- #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
 
+override_dh_installsystemd:
+	# It doesn't make sense to restart this service on upgrade as its only
+	# purpose is to set a hostname very early in the startup process. For the
+	# same reason, starting the service doesn't make sense as the system will
+	# either be:
+	#  a) already running, and have a hostname set.
+	#  b) not really running as it's a chroot
+	dh_installsystemd \
+		--no-stop-on-upgrade \
+		--no-start \
+		early-hostname.service
