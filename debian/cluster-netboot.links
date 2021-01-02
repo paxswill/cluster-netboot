@@ -1,0 +1,3 @@
+../var/hosts		/etc/hosts
+../var/machine-id	/etc/machine-id
+/usr/sbin/generate-cluster-id	/usr/sbin/set-cluster-node-hostname
