@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Busybox is required
+BUSYBOX=y
+
+# And cluster-netboot always boots over NFS
+BOOT=nfs
+NFSROOT=auto
