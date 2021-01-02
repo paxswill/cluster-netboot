@@ -1,7 +1,9 @@
+defaults		etc
+fstab			etc
+hosts.template		etc
+initramfs		etc
+kernel			etc
 sbin			usr
 system-generators	usr/lib
 cluster-netboot		usr/share
 initramfs-tools		usr/share
-conf			etc
-kernel-hooks		etc/kernel
-initramfs-hooks		etc/initramfs
