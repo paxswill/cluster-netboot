@@ -18,7 +18,7 @@ Description: Set up a cluster of netbooting single-board computers
  network, with absolutely minimal on-node storage required (typically just
  enough for a local copy of U-Boot). /var is mounted over iSCSI, while the rest
  of the root filesystem is mounted read-only over NFS.
-Depends: ${shlibs:Depends}, ${misc:Depends}, u-boot, u-boot-tools, device-tree-compiler, initramfs-tools,
+Depends: ${shlibs:Depends}, ${misc:Depends}, u-boot-tools, device-tree-compiler, initramfs-tools,
  busybox, open-iscsi, nfs-common, rsync, findutils, sed, grep, coreutils,
  linux-image-armmp [armhf], linux-image-arm64 [arm64]
 Recommends: e2fsprogs, systemd, raspi-firmware, u-boot-sunxi,

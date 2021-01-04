@@ -1,4 +1,10 @@
-cluster-netboot (0.1.0) unstable; urgency=medium
+cluster-netboot (0.1.1) bullseye; urgency=medium
+
+  * Remove 'u-boot' from dependencies.
+
+ -- Loki <paxswill@Loki.localdomain>  Mon, 04 Jan 2021 15:21:21 -0500
+
+cluster-netboot (0.1.0) bullseye; urgency=medium
 
   * Initial Release.
 
