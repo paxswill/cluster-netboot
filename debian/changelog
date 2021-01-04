@@ -1,8 +1,14 @@
+cluster-netboot (0.1.2) bullseye; urgency=medium
+
+  * Change how install paths are specified by package.
+
+ -- Will Ross <paxswill@paxswill.com>  Mon, 04 Jan 2021 15:48:49 -0500
+
 cluster-netboot (0.1.1) bullseye; urgency=medium
 
   * Remove 'u-boot' from dependencies.
 
- -- Loki <paxswill@Loki.localdomain>  Mon, 04 Jan 2021 15:21:21 -0500
+ -- Will Ross <paxswill@paxswill.com>  Mon, 04 Jan 2021 15:21:21 -0500
 
 cluster-netboot (0.1.0) bullseye; urgency=medium
 
