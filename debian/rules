@@ -16,9 +16,9 @@ override_dh_installsystemd:
 	dh_installsystemd \
 		--no-stop-on-upgrade \
 		--no-start \
-		early-hostname.service
+		--name=early-hostname
 	# On the other hand, these are normal mount units
 	dh_installsystemd \
-		tmp.mount \
-		etc-iscsi-nodes.mount \
-		etc-iscsi-send_targets.mount \
+		--name=tmp.mount \
+		--name=etc-iscsi-nodes.mount \
+		--name=etc-iscsi-send_targets.mount
