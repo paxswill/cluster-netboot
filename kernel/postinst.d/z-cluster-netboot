@@ -83,47 +83,20 @@ if ! [ -d "$DEVICE_TREE_DIR" ]; then
 fi
 
 PATTERNS_DIR="cluster-netboot/dtb-patterns"
-DTBS_PATTERNS="/etc/${PATTERNS_DIR}/${DPKG_MAINTSCRIPT_ARCH}"
+# I'm not sure why, but DPKG_MAINTSCRIPT_ARCH is "all"...
+_CLUSTER_NETBOOT_ARCH="$(dpkg --print-architecture)"
+DTBS_PATTERNS="/etc/${PATTERNS_DIR}/${_CLUSTER_NETBOOT_ARCH}"
 if ! [ -f "$DTBS_PATTERNS" ]; then
-	DTBS_PATTERNS="/usr/share/${PATTERNS_DIR}/${DPKG_MAINTSCRIPT_ARCH}"
+	DTBS_PATTERNS="/usr/share/${PATTERNS_DIR}/${_CLUSTER_NETBOOT_ARCH}"
 fi
 
 rsync \
 	--verbose \
 	--archive \
-	# Put all of the .dtbs directly into the destination, with no extra
-	# directories created. u-boot can look in a 'dtbs' subdir, but the Raspberry
-	# Pi bootloader cannot (I think, I need to double check).
 	--no-relative \
-	# Copy real files, not symlinks.
 	--copy-links \
-	# The filesystem timestamps may lie, so use the checksum for whether or not
-	# to skip.
 	--checksum \
-	# Covered by the "exec" redirect at the top of the script, but just making
-	# sure.
 	--msgs2stderr \
-	# TODO: should this be enabled?
-	#--backup-dir=..\
-	# Read a list of patterns to include from stdin (from the loop above)
 	--include-from="$DTBS_PATTERNS" \
 	"$DEVICE_TREE_DIR" \
 	"$KERNELDIR"
-
-# The u-boot nodes allow the DTBs to be in a "dtb" subdirectory, but the RPi
-# network bootloader doesn't (TODO: double check that), so scattered in the
-# kernel directory it is.
-case "${VERSION}" in
-	*armmp)
-		msg_info "Copying BeagleBone device trees"
-		cp -f ${DEVICE_TREE_DIR}/am335x-bone*.dtb "${KERNELDIR}/"
-		msg_info "Copying Raspberry Pi device trees"
-		cp -f ${DEVICE_TREE_DIR}/bcm*.dtb "${KERNELDIR}/"
-		# The Fingbox is a slightly modified Orange Pi
-		msg_info "Copying H3 Orange Pi device trees"
-		cp -f ${DEVICE_TREE_DIR}/sun8i-h3-orangepi-*.dtb "${KERNELDIR}/"
-		;;
-	*arm64)
-		msg_info "Copying Raspberry Pi device trees"
-		cp -f ${DEVICE_TREE_DIR}/broadcom/bcm*.dtb "${KERNELDIR}/"
-esac
