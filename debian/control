@@ -9,7 +9,7 @@ Vcs-Browser: https://github.com/paxswill/cluster-netboot
 Vcs-Git: https://github.com/paxswill/cluster-netboot.git
 
 Package: cluster-netboot
-Architecture: all
+Architecture: armhf arm64
 Multi-Arch: allowed
 Section: admin
 Priority: optional
