@@ -18,6 +18,9 @@ msg_info() {
 	echo >&2 "I: cluster-netboot: $1"
 }
 
+# I'm not sure why, but DPKG_MAINTSCRIPT_ARCH is "all"...
+_CLUSTER_NETBOOT_ARCH="$(dpkg --print-architecture)"
+
 if ! [ -d "${NETBOOTDIR}" ]; then
 	# Violating Debian kernel hook guidelines for bootloaders (sec 8.2 in the
 	# Debian Linux Kernel Handbook) by exiting with a non-0 status when the
@@ -44,7 +47,7 @@ fi
 
 # Have to put the dpkg arch in here as Ubuntu uses a "generic" kernel for 32 and
 # 64 bit ARM.
-KERNELDIR="${NETBOOTDIR}/kernel-${VERSION}-${DPKG_MAINTSCRIPT_ARCH}"
+KERNELDIR="${NETBOOTDIR}/kernel-${VERSION}-${_CLUSTER_NETBOOT_ARCH}"
 
 mkdir -p "${KERNELDIR}"
 # There's an optional second argument with a path to the kernel. If it's not
@@ -83,8 +86,6 @@ if ! [ -d "$DEVICE_TREE_DIR" ]; then
 fi
 
 PATTERNS_DIR="cluster-netboot/dtb-patterns"
-# I'm not sure why, but DPKG_MAINTSCRIPT_ARCH is "all"...
-_CLUSTER_NETBOOT_ARCH="$(dpkg --print-architecture)"
 DTBS_PATTERNS="/etc/${PATTERNS_DIR}/${_CLUSTER_NETBOOT_ARCH}"
 if ! [ -f "$DTBS_PATTERNS" ]; then
 	DTBS_PATTERNS="/usr/share/${PATTERNS_DIR}/${_CLUSTER_NETBOOT_ARCH}"

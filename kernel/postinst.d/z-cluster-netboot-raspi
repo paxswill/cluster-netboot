@@ -16,6 +16,9 @@ msg_info() {
 	echo >&2 "I: cluster-netboot-raspi: $1"
 }
 
+# I'm not sure why, but DPKG_MAINTSCRIPT_ARCH is "all"...
+_CLUSTER_NETBOOT_ARCH="$(dpkg --print-architecture)"
+
 if ! [ -d "${NETBOOTDIR}" ]; then
 	# Violating Debian kernel hook guidelines for bootloaders (sec 8.2 in the
 	# Debian Linux Kernel Handbook) by exiting with a non-0 status when the
@@ -53,8 +56,8 @@ rsync \
 	"${FIRMWAREDIR}" \
 	"${NETBOOTDIR}"
 
-KERNELDIR="${NETBOOTDIR}/kernel-${VERSION}-${DPKG_MAINTSCRIPT_ARCH}"
-CURRENT_KERNEL_FILE="${NETBOOTDIR}/current_kernel_${DPKG_MAINTSCRIPT_ARCH}"
+KERNELDIR="${NETBOOTDIR}/kernel-${VERSION}-${_CLUSTER_NETBOOT_ARCH}"
+CURRENT_KERNEL_FILE="${NETBOOTDIR}/current_kernel_${_CLUSTER_NETBOOT_ARCH}"
 
 msg_info "Updating current kernel configuration at ${CURRENT_KERNEL_FILE}"
 cat >"${NETBOOTDIR}/${CURRENT_KERNEL_FILE}" <<EOF
