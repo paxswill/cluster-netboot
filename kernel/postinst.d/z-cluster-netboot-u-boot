@@ -55,10 +55,15 @@ EOF
 # `stat`) and compare that to the creation time of the U-Boot image (accessible
 # as a UTC timestamp with `mkimage -l`).
 msg_info "Creating U-Boot boot script."
-# Instead of a legacy U-Boot image, which I'm a bit uncertain can support both
-# 32 and 64 bit architectures in one file, I'm creating the fancy new FIT. It's
-# basically a device tree-style description of the image.
+# Create a legacy U-Boot script image with dummy values for the OS and
+# architecture. Those two fields shouldn't matter to U-Boot when it loads the
+# file, and they fit better semantically than the defaults of a PowerPC Linux
+# image. A legacy image is also used as older U-Boot versions may not support
+# FIT images, or may not support the default property for scripts in FIT images.
 mkimage \
-	-f /usr/share/cluster-netboot/combined-image.its \
+	-T script \
+	-O u-boot \
+	-A invalid \
+	-d /usr/share/cluster-netboot/u-boot-script.txt \
 	"${NETBOOTDIR}/${CLUSTER_UBOOT_SCRIPT_NAME}" \
 	>&2

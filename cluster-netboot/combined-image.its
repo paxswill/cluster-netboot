@@ -2,6 +2,7 @@
 / {
     description = "ARM cluster boot script container";
     images {
+        default = "script";
         script@0 {
             description = "ARM cluster boot script";
             data = /incbin/("./u-boot-script.txt");
