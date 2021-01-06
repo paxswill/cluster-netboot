@@ -43,6 +43,23 @@ else
 fi;
 '
 
+# findfdt is part of the standard BeagleBone U-Boot environment.
+# For other boards...welp.
+# After running findfdt, $fdtfile is the path with "dtb" prefixed, like so:
+# dtb/am335x-boneblack.dtb
+setenv loadfdt '
+if test -n "${run findfdt}"; then
+  run findfdt;
+fi;
+if tftp ${fdt_addr_r} ${boot_prefix}/dtb/${fdtfile}; then
+  setenv fdtaddr ${fdt_addr_r};
+else
+  if tftp ${fdt_addr_r} ${boot_prefix}/${fdtfile}; then
+    setenv fdtaddr ${fdt_addr_r};
+  fi;
+fi;
+'
+
 # Loads the various images into the proper places.
 # The size of the initrd will be stored in the "initrdsize" variable
 # afterwards.
