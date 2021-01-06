@@ -15,7 +15,7 @@ esac
 set -e
 
 log_begin_msg "Mounting instance-specific /var over iSCSI"
-INSTANCE_ID="$(generate-id)"
+INSTANCE_ID="$(generate-cluster-id)"
 if [ -z "$INSTANCE_ID" ]; then
 	panic "Unable to generate a valid instance ID"
 fi
