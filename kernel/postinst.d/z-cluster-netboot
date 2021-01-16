@@ -93,7 +93,6 @@ if ! [ -f "$DTBS_PATTERNS" ]; then
 fi
 
 rsync \
-	--verbose \
 	--archive \
 	--no-relative \
 	--copy-links \

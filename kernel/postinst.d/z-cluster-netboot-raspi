@@ -51,8 +51,7 @@ msg_info "Copying Raspberry Pi firmware files"
 rsync \
 	--checksum \
 	--update \
-	--verbose \
-	--msg2stderr \
+	--msgs2stderr \
 	"${FIRMWAREDIR}" \
 	"${NETBOOTDIR}"
 
@@ -65,15 +64,14 @@ cat >"${NETBOOTDIR}/${CURRENT_KERNEL_FILE}" <<EOF
 os_prefix=${KERNELDIR}
 EOF
 
-msg_info "Copying confg.txt to ${NETBOOTDIR}"
+msg_info "Copying config.txt to ${NETBOOTDIR}"
 CONFIG_TXT="/usr/share/cluster-netboot/raspi-config.txt"
 if ! [ -f "${CONFIG_TXT}" ]; then
 	msg_err "Missing '${CONFIG_TXT}'!" 4
 fi
 rsync \
 	--checksum \
-	--verbose \
-	--msg2stderr \
+	--msgs2stderr \
 	"$CONFIG_TXT" \
 	"${NETBOOTDIR}/config.txt"
 
