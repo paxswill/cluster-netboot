@@ -33,23 +33,10 @@ if [ -z "${VERSION}" ]; then
 	msg_err "No kernel version given" 2
 fi
 
-# Cribbed from the initramfs-tools postinst script.
-# This avoids running the script mutliple times (see Debian Policy manual 
-# section 6.5 for the various arguments a postrm script can be given).
-if [ -n "$DEB_MAINT_PARAMS" ]; then
-	# This will clobber the old script parameters, but that's alright as they're
-	# already saved.
-	eval set -- "$DEB_MAINT_PARAMS"
-	if [ -z "$1" ] || [ "$1" != "configure" ]; then
-		exit 0
-	fi
-fi
-
 # Have to put the dpkg arch in here as Ubuntu uses a "generic" kernel for 32 and
 # 64 bit ARM.
 KERNELDIR="${NETBOOTDIR}/kernel-${VERSION}-${_CLUSTER_NETBOOT_ARCH}"
 
-mkdir -p "${KERNELDIR}"
 # There's an optional second argument with a path to the kernel. If it's not
 # given, the path is either /boot/vmlinuz-$VERSION or /boot/vmlinux-$VERSION
 # For our arches, it's vmlinuz
@@ -67,6 +54,20 @@ fi
 CONFIGFILE="${BOOTDIR}/config-${VERSION}"
 MAPFILE="${BOOTDIR}/System.map-${VERSION}"
 INITRAMFS="${BOOTDIR}/initrd.img-${VERSION}"
+
+# Cribbed from the initramfs-tools postinst script.
+# This avoids running the script mutliple times (see Debian Policy manual 
+# section 6.5 for the various arguments a postrm script can be given).
+if [ -n "$DEB_MAINT_PARAMS" ]; then
+	# This will clobber the old script parameters, but that's alright as they're
+	# already saved.
+	eval set -- "$DEB_MAINT_PARAMS"
+	if [ -z "$1" ] || [ "$1" != "configure" ]; then
+		exit 0
+	fi
+fi
+
+mkdir -p "${KERNELDIR}"
 
 msg_info "Installing ${KERNELFILE} to ${KERNELDIR}/vmlinuz"
 cp -f "${KERNELFILE}" "${KERNELDIR}/vmlinuz"
