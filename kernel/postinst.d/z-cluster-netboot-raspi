@@ -4,8 +4,8 @@ set -e
 exec </dev/null >&2
 
 VERSION="$1"
-NETBOOTDIR="/boot/netboot"
-FIRMWAREDIR="/usr/lib/raspi-firmware"
+NETBOOTDIR="/boot/netboot/"
+FIRMWAREDIR="/usr/lib/raspi-firmware/"
 
 msg_err() {
 	echo >&2 "E: cluster-netboot-raspi: $1"
@@ -56,7 +56,7 @@ rsync \
 	"${NETBOOTDIR}"
 
 KERNELDIR="${NETBOOTDIR}/kernel-${VERSION}-${_CLUSTER_NETBOOT_ARCH}"
-CURRENT_KERNEL_FILE="${NETBOOTDIR}/current_kernel_${_CLUSTER_NETBOOT_ARCH}"
+CURRENT_KERNEL_FILE="current_kernel_${_CLUSTER_NETBOOT_ARCH}.txt"
 
 msg_info "Updating current kernel configuration at ${CURRENT_KERNEL_FILE}"
 cat >"${NETBOOTDIR}/${CURRENT_KERNEL_FILE}" <<EOF
