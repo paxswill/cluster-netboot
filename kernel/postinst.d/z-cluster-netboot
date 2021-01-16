@@ -99,5 +99,6 @@ rsync \
 	--checksum \
 	--msgs2stderr \
 	--include-from="$DTBS_PATTERNS" \
+	--exclude='*' \
 	"$DEVICE_TREE_DIR"/ \
 	"$KERNELDIR"
