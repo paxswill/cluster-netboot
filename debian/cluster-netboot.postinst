@@ -26,8 +26,7 @@ CONFIGFILE="${CONFIGFILE:=/etc/cluster-netboot/config}"
 if [ "$1" = "configure" ]; then
 	if [ ! -e "$CONFIGFILE" ]; then
 		mkdir -p $(dirname "$CONFIGFILE")
-		#cp /usr/share/cluster-netboot/config.default "$CONFIGFILE"
-		cp ./cluster-netboot/config.default "$CONFIGFILE"
+		cp /usr/share/cluster-netboot/config.default "$CONFIGFILE"
 	fi
 
 	CONFITEMS="
