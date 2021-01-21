@@ -19,8 +19,9 @@ CLUSTER_ISCSI_INITIATOR=2020-12.com.paxswill.cluster-netboot
 
 # Load /etc/defaults/cluster-netboot after the simple settings, but before the
 # settings that depend on earlier settings.
-if [ -f /etc/defaults/cluster-netboot ]; then
-    . /etc/defaults/cluster-netboot
+CLUSTER_CONFIGFILE=/etc/cluster-netboot/config
+if [ -f $CLUSTER_CONFIGFILE ]; then
+    . $CLUSTER_CONFIGFILE
 else
     # Try finding the defaults config relative to this file (used when being
     # sourced in initramfs from sysroot). This only works if this script is
@@ -37,12 +38,16 @@ else
     _LOADER_RELATIVE_ROOT="$(realpath \
         "$(dirname ${_LOADER_FULL_PATH})/../../.."
     )"
-    if [ -f "${_LOADER_RELATIVE_ROOT}/etc/defaults/cluster-netboot" ]; then
-        . "${_LOADER_RELATIVE_ROOT}/etc/defaults/cluster-netboot"
+    if [ -f "${_LOADER_RELATIVE_ROOT}${CLUSTER_CONFIGFILE}" ]; then
+        . "${_LOADER_RELATIVE_ROOT}${CLUSTER_CONFIGFILE}"
     fi
     unset _LOADER_FULL_PATH
     unset _LOADER_RELATIVE_ROOT
 fi
+unset CLUSTER_CONFIGFILE
+
+# Ensure that CLUSTER_NFS_BASE_PATH does not have a trailing slash.
+CLUSTER_NFS_BASE_PATH="${CLUSTER_NFS_BASE_PATH%/}"
 
 # The date and domain for the iSCSI *target*. If not set, the value from
 # CLUSTER_ISCSI_INITIATOR will be used. The same guidelines for that value also
@@ -56,16 +61,14 @@ CLUSTER_ISCSI_TARGET="${CLUSTER_ISCSI_TARGET:=${CLUSTER_ISCSI_INITIATOR}}"
 # will be used (which is typically provided via DHCP).
 CLUSTER_ISCSI_SERVER="${CLUSTER_ISCSI_SERVER:-${CLUSTER_NFS_SERVER}}"
 
-# The exported path to the root filesystems. If not set, defaults to
-# ${CLUSTER_NFS_BASE_PATH}/root
-CLUSTER_NFS_ROOT_PATH="${CLUSTER_NFS_ROOT_PATH:=${CLUSTER_NFS_BASE_PATH}/root}"
-
-# It is also possible to set specific paths for each architecture's root by
+# It is possible to set specific paths for each architecture's root by
 # setting the variable name "CLUSTER_NFS_ROOT_${ARCH}_PATH" with ARCH being one
 # of "armhf" or "arm64" (uppercased). If not set, the values default to
-# "${CLUSTER_NFS_ROOT_PATH}/${ARCH}".
-CLUSTER_NFS_ROOT_ARMHF_PATH="${CLUSTER_NFS_ROOT_ARMHF_PATH:-${CLUSTER_NFS_ROOT_PATH}/armhf}"
-CLUSTER_NFS_ROOT_ARM64_PATH="${CLUSTER_NFS_ROOT_ARM64_PATH:-${CLUSTER_NFS_ROOT_PATH}/arm64}"
+# "root/${ARCH}". Note that the default value does not start with a leading
+# slash. Without a leading slash, the path is interpreted as relative to the NFS
+# base path defined earlier.
+CLUSTER_NFS_ROOT_ARMHF_PATH="${CLUSTER_NFS_ROOT_ARMHF_PATH:-root/armhf}"
+CLUSTER_NFS_ROOT_ARM64_PATH="${CLUSTER_NFS_ROOT_ARM64_PATH:-root/arm64}"
 
 # Because not every usage of this script will need the resolved NFS server, and
 # this lookup requires shelling out to some external commands, it's being kept
@@ -100,9 +103,24 @@ cluster_nfs_server_resolved() {
 }
 
 # The exported path to the netboot root. If not set, defaults to
-# ${CLUSTER_NFS_BASE_PATH}/netboot
-#CLUSTER_NFS_NETBOOT_PATH="${CLUSTER_NFS_BASE_PATH}/netboot"
-CLUSTER_NFS_NETBOOT_PATH="${CLUSTER_NFS_NETBOOT_PATH:-${CLUSTER_NFS_BASE_PATH}/netboot}"
+# "netboot", and like the root paths above, means that this is relative to the
+# NFS base path.
+CLUSTER_NFS_NETBOOT_PATH="${CLUSTER_NFS_NETBOOT_PATH:-netboot}"
+
+# This expands the NFS paths as appropriate
+_expand_nfs_path() {
+    # One argument, the *name* of the variable being expanded
+    eval value="\$$1"
+    if [ "${value#/}" = "$value" ]; then
+        # it's relative, append to $CLUSTER_NFS_BASE_PATH
+        eval ${1}="${CLUSTER_NFS_BASE_PATH}/${value}"
+    fi
+    unset value
+}
+_expand_nfs_path CLUSTER_NFS_ROOT_ARMHF_PATH
+_expand_nfs_path CLUSTER_NFS_ROOT_ARM64_PATH
+_expand_nfs_path CLUSTER_NFS_NETBOOT_PATH
+unset -f _expand_nfs_path
 
 # The path and name to the U-Boot boot script within the netboot root. Defaults
 # to "boot.scr" (meaning at the root of the netboot share). "boot.scr" is a

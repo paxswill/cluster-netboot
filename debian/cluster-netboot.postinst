@@ -5,6 +5,8 @@
 
 set -e
 
+. /usr/share/debconf/confmodule
+
 # summary of how this script can be called:
 #        * <postinst> `configure' <most-recently-configured-version>
 #        * <old-postinst> `abort-upgrade' <new version>
@@ -17,14 +19,69 @@ set -e
 # for details, see https://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
-if [ "$1" != "configure" ]; then
+# The parameter expansion here is to allow overriding the config file during
+# development.
+CONFIGFILE="${CONFIGFILE:=/etc/cluster-netboot/config}"
+
+if [ "$1" = "configure" ]; then
+	if [ ! -e "$CONFIGFILE" ]; then
+		mkdir -p $(dirname "$CONFIGFILE")
+		#cp /usr/share/cluster-netboot/config.default "$CONFIGFILE"
+		cp ./cluster-netboot/config.default "$CONFIGFILE"
+	fi
+
+	CONFITEMS="
+	NFS_SERVER NFS_BASE_PATH ISCSI_INITIATOR ISCSI_TARGET
+	NFS_ROOT_ARMHF_PATH NFS_ROOT_ARM64_PATH NFS_NETBOOT_PATH
+	UBOOT_SCRIPT_NAME RASPI_EXTRA_CMDLINE
+	"
+
+	# Pull in the values from debconf
+	for config_item in $CONFITEMS; do
+		db_get cluster-netboot/CLUSTER_${config_item}
+		eval CLUSTER_${config_item}="$RET"
+	done
+	cp -a -f "$CONFIGFILE" "${CONFIGFILE}.tmp"
+
+	# Create a monster sed command to update the config file with the values
+	# from debconf.
+	for config_item in $CONFITEMS; do
+		db_fget cluster-netboot/CLUSTER_${config_item} seen
+		config_seen=$RET
+		eval config_value="\${CLUSTER_${config_item}}"
+		config_regex="^#?\s*(CLUSTER_${config_item}=)"
+		# If a config item was deleted from the config file, but then set in
+		# debconf, re-add that item to the file.
+		# This is going to be a deep pile of if statements, working around POSIX
+		# being lightly defined for complex conditional statements.
+		if ! grep -Eq "$config_regex" "$CONFIGFILE"; then
+			if [ "$config_seen" != "true" ] || [ -z "$config_value" ]; then
+				echo "CLUSTER_${config_item}=" >> "$CONFIGFILE"
+			fi
+		fi
+		if [ "$config_seen" = "true" ]; then
+			SED_CMDS="-e s,${config_regex}.*,\1${config_value},${SED_CMDS+ }${SED_CMDS}"
+		else
+			# If this hasn't been seen (or has been reset and un-seen by the
+			# config script) comment out the line, but put the config value in
+			SED_CMDS="-e s,${config_regex}.*,#\1${config_value},${SED_CMDS+ }${SED_CMDS}"
+		fi
+	done
+
+	sed -E $SED_CMDS < "$CONFIGFILE" > "${CONFIGFILE}.tmp"
+	mv -f "${CONFIGFILE}.tmp" "$CONFIGFILE"
+
+	# Run kernel hooks
+	for KERNEL_VERSION in $(ls -1 /usr/lib/modules); do
+		/etc/kernel/postinst.d/z-cluster-netboot-raspi $KERNEL_VERSION
+		/etc/kernel/postinst.d/z-cluster-netboot-u-boot $KERNEL_VERSION
+	done
+	# If we're reconfiguring, we need to trigger update-initramfs ourselves
+	if [ -n "$DEBCONF_RECONFIGURE" ]; then
+		update-initramfs -u -k all
+	fi
 	exit 0
 fi
-
-for KERNEL_VERSION in $(ls -1 /usr/lib/modules); do
-	/etc/kernel/postinst.d/z-cluster-netboot-raspi $KERNEL_VERSION
-	/etc/kernel/postinst.d/z-cluster-netboot-u-boot $KERNEL_VERSION
-done
 
 #DEBHELPER#
 

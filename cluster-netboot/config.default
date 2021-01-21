@@ -27,19 +27,18 @@
 # will be used (which is typically provided via DHCP).
 #CLUSTER_ISCSI_SERVER=
 
-# The exported path to the root filesystems. If not set, defaults to
-# ${CLUSTER_NFS_BASE_PATH}/root
-#CLUSTER_NFS_ROOT_PATH="${CLUSTER_NFS_BASE_PATH}/root"
-
-# It is also possible to set specific paths for each architecture's root by
+# It is possible to set specific paths for each architecture's root by
 # setting the variable name "CLUSTER_NFS_ROOT_${ARCH}_PATH" with ARCH being one
 # of "armhf" or "arm64" (uppercased). If not set, the values default to
-# "${CLUSTER_NFS_ROOT_PATH}/${ARCH}".
-#CLUSTER_NFS_ROOT_ARMHF_PATH="${CLUSTER_NFS_ROOT_PATH}/armhf"
-#CLUSTER_NFS_ROOT_ARM64_PATH="${CLUSTER_NFS_ROOT_PATH}/arm64"
+# "root/${ARCH}". Note that the default value does not start with a leading
+# slash. Without a leading slash, the path is interpreted as relative to the NFS
+# base path defined earlier.
+#CLUSTER_NFS_ROOT_ARMHF_PATH="${CLUSTER_NFS_BASE_PATH}/root/armhf"
+#CLUSTER_NFS_ROOT_ARM64_PATH="${CLUSTER_NFS_BASE_PATH}/root/arm64"
 
-# The exported path tp the netboot root. If not set, defaults to
-# ${CLUSTER_NFS_BASE_PATH}/netboot
+# The exported path to the netboot root. If not set, defaults to
+# "netboot", and like the root paths above, means that this is relative to the
+# NFS base path.
 #CLUSTER_NFS_NETBOOT_PATH="${CLUSTER_NFS_BASE_PATH}/netboot"
 
 # The path and name to the U-Boot boot script within the netboot root. Defaults

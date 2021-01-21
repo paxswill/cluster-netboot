@@ -1,4 +1,3 @@
-defaults/cluster-netboot		etc/defaults
 fstab			etc
 hosts.template		etc
 initramfs/z-cluster-netboot		etc/initramfs/post-update.d
@@ -13,7 +12,7 @@ system-generators/netboot-mount-generator	usr/lib/systemd/system-generators
 system-generators/nfsroot-mount-generator	usr/lib/systemd/system-generators
 cluster-netboot		usr/share
 initramfs-tools/conf-hooks.d/cluster-netboot		usr/share/initramfs-tools/conf-hooks.d
-initramfs-tools/scripts/init-premout/generate_hostname.sh		usr/share/initramfs-tools/scripts/init-premount
+initramfs-tools/scripts/init-premount/generate_hostname.sh		usr/share/initramfs-tools/scripts/init-premount
 initramfs-tools/scripts/nfs-bottom/initialize-var.sh		usr/share/initramfs-tools/scripts/nfs-bottom
 initramfs-tools/scripts/nfs-bottom/mount-var-iscsi.sh		usr/share/initramfs-tools/scripts/nfs-bottom
 initramfs-tools/modules		etc/initramfs-tools
