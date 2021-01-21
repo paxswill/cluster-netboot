@@ -72,7 +72,7 @@ in_initrd() {
 	fi
 }
 
-if in_initrd(); then
+if in_initrd; then
 	ROOT_MOUNTPOINT="/sysroot"
 else
 	ROOT_MOUNTPOINT="/"

@@ -49,7 +49,7 @@ in_initrd() {
 	fi
 }
 
-if in_initrd(); then
+if in_initrd; then
 	# The systemd sources fall back to /sysroot, but the initramfs-tools manpage
 	# says the future root is usually mounted at /root
 	if [ -e /sysroot ]; then

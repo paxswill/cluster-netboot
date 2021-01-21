@@ -29,16 +29,16 @@ case "$MODEL" in
 	# readme).
 	rsync $RSYNC_OPTS /usr/lib/u-boot/am335x_evm/{MLO,u-boot.img} /boot/firmware/
 	;;
-Raspberry Pi*)
+"Raspberry Pi*")
 	echo "Updating Raspberry Pi firmware"
 	rsync $RSYNC_OPTS /usr/lib/raspi-firmware/ /boot/firmware/
 	(
 		case "$MODEL" in
-		Raspberry Pi 2*)
+		"Raspberry Pi 2*")
 			rsync $RSYNC_OPTS /usr/lib/u-boot/rpi_2/u-boot.bin /boot/firmware/;;
-		Raspberry Pi 3*)
+		"Raspberry Pi 3*")
 			rsync $RSYNC_OPTS /usr/lib/u-boot/rpi_3_32b/u-boot.bin /boot/firmware/;;
-		Raspberry Pi 4*)
+		"Raspberry Pi 4*")
 			rsync $RSYNC_OPTS /usr/lib/u-boot/rpi_4_32b/u-boot.bin /boot/firmware/;;
 		esac
 	)
