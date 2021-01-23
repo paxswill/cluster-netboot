@@ -16,30 +16,22 @@ setenv initrd_file initrd.img
 # appropriately. See the generated "uEnv-${arch}.txt" files for an example.
 setenv loadnetenv '
 setenv autoload no;
-setenv netscriptfound 0;
+if tftp ${scriptaddr} "uEnv.txt"; then
+  echo "Importing environment from uEnv.txt";
+  env import -t ${scriptaddr} ${filesize};
+fi;
 if tftp ${scriptaddr} "uEnv-${serial#}.txt"; then
   echo "Importing environment from uEnv-${serial#}.txt";
-  setenv netscriptfound 1;
-else
-  if test "${arch}" -eq "arm"; then
-    setenv uenv_arch armhf;
-  else
-    setenv uenv_arch "${arm}"
-  fi;
-  if tftp ${scriptaddr} "uEnv-${uenv_arch}.txt"; then
-    echo "Importing environment from uEnv-${uenv_arch}.txt";
-    setenv netscriptfound 1;
-  else
-    if tftp ${scriptaddr} "uEnv.txt"; then
-      echo "Importing environment from uEnv.txt";
-      setenv netscriptfound 1;
-    fi;
-  fi;
-fi;
-if test ${netscriptfound} -eq 1; then
   env import -t ${scriptaddr} ${filesize};
+fi;
+if test "${arch}" -eq "arm"; then
+  setenv uenv_arch armhf;
 else
-  echo "Not importing environment, using default values.";
+  setenv uenv_arch "${arm}"
+fi;
+if tftp ${scriptaddr} "uEnv-${uenv_arch}.txt"; then
+  echo "Importing environment from uEnv-${uenv_arch}.txt";
+  env import -t ${scriptaddr} ${filesize};
 fi;
 '
 
