@@ -1,0 +1,20 @@
+#!/bin/sh
+# postinst script for cluster-netboot
+#
+# see: dh_installdeb(1)
+
+set -e
+
+# The parameter expansion here is to allow overriding the config file during
+# development.
+CONFIGFILE="${CONFIGFILE:=/etc/cluster-netboot/config}"
+
+if [ "$1" = "purge" ]; then
+	rm -f "$CONFIGFILE"
+	rm -f "${CONFIGFILE}.tmp"
+	rmdir --ignore-fail-on-non-empty "$(dirname "${CONFIGFILE}")"
+fi
+
+#DEBHELPER#
+
+exit 0
