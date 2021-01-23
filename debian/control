@@ -18,12 +18,14 @@ Description: Set up a cluster of netbooting single-board computers
  network, with absolutely minimal on-node storage required (typically just
  enough for a local copy of U-Boot). /var is mounted over iSCSI, while the rest
  of the root filesystem is mounted read-only over NFS.
-Depends: ${shlibs:Depends}, ${misc:Depends}, debconf,
- u-boot-tools, device-tree-compiler, initramfs-tools,
- busybox, open-iscsi, nfs-common, rsync, findutils, sed, grep, coreutils,
- linux-image-armmp [armhf], linux-image-arm64 [arm64]
-Recommends: e2fsprogs, systemd, raspi-firmware, u-boot-sunxi,
- u-boot-omap [armhf], u-boot-rpi [armhf]
+Depends: ${shlibs:Depends}, ${misc:Depends}, debconf (>=1.5.74),
+ u-boot-tools (>=2020.10), device-tree-compiler (>=1.6.0),
+ initramfs-tools (>=0.139), busybox (>=1:1.30.1),
+ open-iscsi (>=2.1.3), nfs-common (>=1:1.3.4), rsync (>=3.2.3),
+ findutils (>=4.8.0), sed (>=4.7), grep (>=3.6), coreutils (>=8.32),
+ linux-image-armmp (>=5.10) [armhf], linux-image-arm64 (>=5.10) [arm64]
+Recommends: e2fsprogs, systemd, raspi-firmware, u-boot-sunxi (>=2020.10),
+ u-boot-omap (>=2020.10) [armhf], u-boot-rpi (>=2020.10) [armhf]
 Suggests: autofs
 Replaces: raspi-firmware
 Provides: ${diverted-files}
