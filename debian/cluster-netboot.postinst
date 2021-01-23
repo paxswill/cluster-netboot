@@ -71,7 +71,7 @@ if [ "$1" = "configure" ]; then
 	mv -f "${CONFIGFILE}.tmp" "$CONFIGFILE"
 
 	# Run kernel hooks
-	for KERNEL_VERSION in $(ls -1 /usr/lib/modules); do
+	for KERNEL_VERSION in $(ls -1 /usr/lib/modules | sort --version-sort); do
 		/etc/kernel/postinst.d/z-cluster-netboot-raspi $KERNEL_VERSION
 		/etc/kernel/postinst.d/z-cluster-netboot-u-boot $KERNEL_VERSION
 	done
