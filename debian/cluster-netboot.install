@@ -1,5 +1,5 @@
 fstab			etc
-hosts.template		etc
+nsswitch.conf	etc
 machine-id			etc
 initramfs/z-cluster-netboot		etc/initramfs/post-update.d
 kernel/postinst.d/z-cluster-netboot			etc/kernel/postinst.d
