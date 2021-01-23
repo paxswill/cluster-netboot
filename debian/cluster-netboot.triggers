@@ -1,1 +1,3 @@
 activate-noawait update-initramfs
+interest-await /usr/lib/raspi-firmware
+interest-await /usr/lib/u-boot

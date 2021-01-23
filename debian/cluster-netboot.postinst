@@ -23,6 +23,13 @@ set -e
 # development.
 CONFIGFILE="${CONFIGFILE:=/etc/cluster-netboot/config}"
 
+call_kernel_hook() {
+	# Run kernel hooks
+	for KERNEL_VERSION in $(ls -1 /usr/lib/modules | sort --version-sort); do
+		"$1" $KERNEL_VERSION
+	done
+}
+
 if [ "$1" = "configure" ]; then
 	if [ ! -e "$CONFIGFILE" ]; then
 		mkdir -p $(dirname "$CONFIGFILE")
@@ -67,15 +74,25 @@ if [ "$1" = "configure" ]; then
 		fi
 	done
 
+	call_kernel_hook /etc/kernel/postinst.d/z-cluster-netboot-raspi
+	call_kernel_hook /etc/kernel/postinst.d/z-cluster-netboot-u-boot
+
 	sed -E $SED_CMDS < "$CONFIGFILE" > "${CONFIGFILE}.tmp"
 	mv -f "${CONFIGFILE}.tmp" "$CONFIGFILE"
-
-	# Run kernel hooks
-	for KERNEL_VERSION in $(ls -1 /usr/lib/modules | sort --version-sort); do
-		/etc/kernel/postinst.d/z-cluster-netboot-raspi $KERNEL_VERSION
-		/etc/kernel/postinst.d/z-cluster-netboot-u-boot $KERNEL_VERSION
+elif [ "$1" = "triggered" ]; then
+	# There are two triggers this package declares interest in:
+	# * /usr/lib/raspi-firmware
+	# * /usr/lib.u-boot
+	# Both contain boot firmware, and correspond to one of the kernel postinst
+	# hooks.
+	for trigger in $2; do
+		case $trigger in
+		/usr/lib/raspi-firmware)
+			call_kernel_hook /etc/kernel/postinst.d/z-cluster-netboot-raspi;;
+		/usr/lib/u-boot)
+			call_kernel_hook /etc/kernel/postinst.d/z-cluster-netboot-u-boot;;
+		esac
 	done
-	exit 0
 fi
 
 #DEBHELPER#
