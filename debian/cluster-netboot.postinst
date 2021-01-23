@@ -73,12 +73,14 @@ if [ "$1" = "configure" ]; then
 			SED_CMDS="-e s,${config_regex}.*,#\1${config_value},${SED_CMDS+ }${SED_CMDS}"
 		fi
 	done
+	sed -E $SED_CMDS < "$CONFIGFILE" > "${CONFIGFILE}.tmp"
+	mv -f "${CONFIGFILE}.tmp" "$CONFIGFILE"
 
 	call_kernel_hook /etc/kernel/postinst.d/z-cluster-netboot-raspi
 	call_kernel_hook /etc/kernel/postinst.d/z-cluster-netboot-u-boot
 
-	sed -E $SED_CMDS < "$CONFIGFILE" > "${CONFIGFILE}.tmp"
-	mv -f "${CONFIGFILE}.tmp" "$CONFIGFILE"
+	deb-systemd-helper enable systemd-resolved.service
+	deb-systemd-helper enable systemd-networkd.service
 elif [ "$1" = "triggered" ]; then
 	# There are two triggers this package declares interest in:
 	# * /usr/lib/raspi-firmware

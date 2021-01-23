@@ -9,6 +9,7 @@ kernel/postrm.d/z-cluster-netboot			etc/kernel/postrm.d
 sbin/generate-cluster-id			usr/sbin
 sbin/remount-root			usr/sbin
 sbin/update-firmware			usr/sbin
+50-cluster-netboot.network		usr/lib/systemd/network
 system-generators/netboot-mount-generator	usr/lib/systemd/system-generators
 system-generators/nfsroot-mount-generator	usr/lib/systemd/system-generators
 cluster-netboot		usr/share

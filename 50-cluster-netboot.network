@@ -1,0 +1,18 @@
+[Match]
+Type=ether
+KernelCommandLine=ip=dhcp
+
+[Network]
+Description=Default cluster node Ethernet connection
+LinkLocalAddressing=yes
+# Whatever happens, do *not* lose network connectivity
+KeepConfiguration=yes
+# We're already online
+RequiredForOnline=no
+DHCP=yes
+
+[DHCP]
+SendRelease=false
+# The hostname is already using the MAC address, and the machine-id has a chance
+# (if things are misconfigured) to not be unique.
+DUIDType=link-layer
