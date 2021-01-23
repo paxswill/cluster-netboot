@@ -23,7 +23,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, debconf (>=1.5.74),
  initramfs-tools (>=0.139), busybox (>=1:1.30.1),
  open-iscsi (>=2.1.3), nfs-common (>=1:1.3.4), rsync (>=3.2.3),
  findutils (>=4.8.0), sed (>=4.7), grep (>=3.6), coreutils (>=8.32),
- linux-image-armmp (>=5.10) [armhf], linux-image-arm64 (>=5.10) [arm64]
+ linux-image-armmp (>=5.9) [armhf] | linux-image-arm64 (>=5.9) [arm64] | linux-image-generic (>=5.9) | linux-image-raspi (>=5.7)
 Recommends: e2fsprogs, systemd, raspi-firmware, u-boot-sunxi (>=2020.10),
  u-boot-omap (>=2020.10) [armhf], u-boot-rpi (>=2020.10) [armhf]
 Suggests: autofs
