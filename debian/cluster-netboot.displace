@@ -1,0 +1,3 @@
+/etc/initramfs/post-update.d/z50-raspi-firmware.cluster
+/etc/kernel/postinst.d/z50-raspi-firmware.cluster
+/etc/kernel/postrm.d/z50-raspi-firmware.cluster

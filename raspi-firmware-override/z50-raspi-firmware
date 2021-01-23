@@ -1,0 +1,2 @@
+#!/bin/sh
+# An empty script to replace raspi-firmware kernel and initramfs hooks 

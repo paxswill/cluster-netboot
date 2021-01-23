@@ -16,3 +16,6 @@ initramfs-tools/scripts/init-premount/generate_hostname.sh		usr/share/initramfs-
 initramfs-tools/scripts/nfs-bottom/initialize-var.sh		usr/share/initramfs-tools/scripts/nfs-bottom
 initramfs-tools/scripts/nfs-bottom/mount-var-iscsi.sh		usr/share/initramfs-tools/scripts/nfs-bottom
 initramfs-tools/modules		etc/initramfs-tools
+raspi-firmware-override/z50-raspi-firmware	/etc/initramfs/post-update.d
+raspi-firmware-override/z50-raspi-firmware	/etc/kernel/postinst.d
+raspi-firmware-override/z50-raspi-firmware	/etc/kernel/postrm.d
