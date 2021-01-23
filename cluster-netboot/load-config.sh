@@ -81,7 +81,7 @@ cluster_nfs_server_resolved() {
     # The return value is the hostname *or* IP address of the NFS server. If /
     # is not mounted over NFS, an empty string is returned.
     if [ "$1" = "" ]; then
-        _ROOT_MOUNTPOINT="${rootmnt:-/}"
+        _ROOT_MOUNTPOINT="/"
     else
         _ROOT_MOUNTPOINT="$1"
     fi
@@ -94,9 +94,10 @@ cluster_nfs_server_resolved() {
     # -o and -m are extensions to POSIX grep, but are present in busybox grep.
     _NFS_ROOT="$(grep -o -m 1 -e "$_NFS_REGEX" /proc/mounts)"
     if [ "$_NFS_ROOT" = "" ]; then
-        return ""
+        echo ""
+    else
+        echo "${_NFS_ROOT%%:*}"
     fi
-    echo "${_NFS_REGEX%%:*}"
     unset _ROOT_MOUNTPOINT
     unset _NFS_REGEX
     unset _NFS_ROOT

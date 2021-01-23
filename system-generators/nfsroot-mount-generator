@@ -63,7 +63,7 @@ in_initrd() {
 	# Rely on sudo to sanitize environment variables (as I don't want to
 	# reimplement getenv_secure in shell script).
 	ENV_IN_INITRD=$(parse_bool "$SYSTEMD_IN_INITRD")
-	if [ $ENV_IN_INITRD -eq 255 ]; then
+	if [ ${ENV_IN_INITRD:-0} -eq 255 ]; then
 		# NOTE: *not* doing the extra check from in_initrd() (that it's a tmpfs)
 		[ -f "/etc/initrd-release" ]
 		return
@@ -73,7 +73,13 @@ in_initrd() {
 }
 
 if in_initrd; then
-	ROOT_MOUNTPOINT="/sysroot"
+	# The systemd sources fall back to /sysroot, but the initramfs-tools manpage
+	# says the future root is usually mounted at /root
+	if [ -e /sysroot ]; then
+		ROOT_MOUNTPOINT=/sysroot
+	elif [ -e /root ]; then
+		ROOT_MOUNTPOINT=/root
+	fi
 else
 	ROOT_MOUNTPOINT="/"
 fi
@@ -101,3 +107,7 @@ What=${ROOT_MOUNT}
 Type=nfs
 Options=${ROOT_OPTIONS}
 EOF
+
+
+mkdir -p "${OUTPUT_DIR}/remote-fs.target.wants"
+ln -s "../${OUTPUT_DIR}/-.mount" "${OUTPUT_DIR}/remote-fs.target.wants/"
