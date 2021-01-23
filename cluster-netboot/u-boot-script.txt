@@ -40,7 +40,7 @@ fi;
 # After running findfdt, $fdtfile is the path with "dtb" prefixed, like so:
 # dtb/am335x-boneblack.dtb
 setenv loadfdt '
-if test -n "${run findfdt}"; then
+if test -n "${findfdt}"; then
   run findfdt;
 fi;
 if tftp ${fdt_addr_r} ${boot_prefix}/dtb/${fdtfile}; then
