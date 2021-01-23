@@ -14,6 +14,10 @@ msg_err() {
 	exit $2
 }
 
+msg_warn() {
+	echo >&2 "W: cluster-netboot: $1"
+}
+
 msg_info() {
 	echo >&2 "I: cluster-netboot: $1"
 }
@@ -39,7 +43,7 @@ KERNELDIR="${NETBOOTDIR}/kernel-${VERSION}-${_CLUSTER_NETBOOT_ARCH}"
 
 # There's an optional second argument with a path to the kernel. If it's not
 # given, the path is either /boot/vmlinuz-$VERSION or /boot/vmlinux-$VERSION
-# For our arches, it's vmlinuz
+# For armhf and arm64, it's vmlinuz
 if [ -z "$2" ]; then
 	BOOTDIR="/boot"
 	if [ -e "${BOOTDIR}/vmlinuz-${VERSION}" ]; then
@@ -92,13 +96,17 @@ if ! [ -f "$DTBS_PATTERNS" ]; then
 	DTBS_PATTERNS="/usr/share/${PATTERNS_DIR}/${_CLUSTER_NETBOOT_ARCH}"
 fi
 
-rsync \
-	--archive \
-	--no-relative \
-	--copy-links \
-	--checksum \
-	--msgs2stderr \
-	--include-from="$DTBS_PATTERNS" \
-	--exclude='*' \
-	"$DEVICE_TREE_DIR"/ \
-	"$KERNELDIR"
+if [ -e "$DTBS_PATTERNS" ]; then
+	rsync \
+		--archive \
+		--no-relative \
+		--copy-links \
+		--checksum \
+		--msgs2stderr \
+		--include-from="$DTBS_PATTERNS" \
+		--exclude='*' \
+		"$DEVICE_TREE_DIR"/ \
+		"$KERNELDIR"
+else
+	msg_warn "Missing DTB patterns file."
+fi

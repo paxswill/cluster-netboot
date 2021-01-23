@@ -12,6 +12,10 @@ msg_err() {
 	exit $2
 }
 
+msg_warn() {
+	echo >&2 "W: cluster-netboot-raspi: $1"
+}
+
 msg_info() {
 	echo >&2 "I: cluster-netboot-raspi: $1"
 }
@@ -19,12 +23,14 @@ msg_info() {
 # I'm not sure why, but DPKG_MAINTSCRIPT_ARCH is "all"...
 _CLUSTER_NETBOOT_ARCH="$(dpkg --print-architecture)"
 
-if ! [ -d "${NETBOOTDIR}" ]; then
-	# Violating Debian kernel hook guidelines for bootloaders (sec 8.2 in the
-	# Debian Linux Kernel Handbook) by exiting with a non-0 status when the
-	# bootloader is "disabled". In this case, I *want* to be alerted that the
-	# "bootloader" isn't being updated properly.
+# Violating Debian kernel hook guidelines for bootloaders (sec 8.2 in the
+# Debian Linux Kernel Handbook) by exiting with a non-0 status when the
+# bootloader is "disabled". In this case, I *want* to be alerted that the
+# "bootloader" isn't being updated properly.
+if [ ! -d "${NETBOOTDIR}" ]; then
 	msg_err "/boot/netboot is not mounted" 3
+elif [ ! -w "${NETBOOTDIR}" ]; then
+	msg_err "/boot/netboot is not writable" 4
 fi
 
 if [ -z "${VERSION}" ]; then
@@ -45,6 +51,12 @@ fi
 
 . /usr/share/cluster-netboot/load-config.sh
 
+if [ ! -d "$FIRMWAREDIR" ] || \
+		[ ! -r "$FIRMWAREDIR" ] || \
+		[ ! -x "$FIRMWAREDIR" ]; then
+	msg_warn "${FIRMWAREDIR} is not available, skipping."
+	exit 0
+fi
 msg_info "Copying Raspberry Pi firmware files"
 # Just spray the RPi firmware files everywhere as their subdirectory handling is
 # a bit lacking.
@@ -67,7 +79,8 @@ EOF
 msg_info "Copying config.txt to ${NETBOOTDIR}"
 CONFIG_TXT="/usr/share/cluster-netboot/raspi-config.txt"
 if ! [ -f "${CONFIG_TXT}" ]; then
-	msg_err "Missing '${CONFIG_TXT}'!" 4
+	msg_warn "Missing '${CONFIG_TXT}'!"
+	exit 0
 fi
 rsync \
 	--checksum \

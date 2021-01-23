@@ -5,4 +5,10 @@ if [ -n "$INITRAMFS_TOOLS_KERNEL_HOOK" ]; then
 	exit 0
 fi
 
-DEB_MAINT_PARAMS=configure /etc/kernel/postinst.d/z-cluster-netboot $1
+KERNEL_HOOK=/etc/kernel/postinst.d/z-cluster-netboot
+if [ -x "$KERNEL_HOOK" ]; then
+	DEB_MAINT_PARAMS=configure $KERNEL_HOOK $1
+else
+	echo "Unable to execute ${KERNEL_HOOK}"
+	exit 1
+fi

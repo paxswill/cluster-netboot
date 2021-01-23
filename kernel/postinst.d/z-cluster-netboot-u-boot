@@ -11,6 +11,10 @@ msg_err() {
 	exit $2
 }
 
+msg_warn() {
+	echo >&2 "W: cluster-netboot-u-boot: $1"
+}
+
 msg_info() {
 	echo >&2 "I: cluster-netboot-u-boot: $1"
 }
@@ -18,12 +22,14 @@ msg_info() {
 # I'm not sure why, but DPKG_MAINTSCRIPT_ARCH is "all"...
 _CLUSTER_NETBOOT_ARCH="$(dpkg --print-architecture)"
 
-if ! [ -d "${NETBOOTDIR}" ]; then
-	# Violating Debian kernel hook guidelines for bootloaders (sec 8.2 in the
-	# Debian Linux Kernel Handbook) by exiting with a non-0 status when the
-	# bootloader is "disabled". In this case, I *want* to be alerted that the
-	# "bootloader" isn't being updated properly.
+# Violating Debian kernel hook guidelines for bootloaders (sec 8.2 in the
+# Debian Linux Kernel Handbook) by exiting with a non-0 status when the
+# bootloader is "disabled". In this case, I *want* to be alerted that the
+# "bootloader" isn't being updated properly.
+if [ ! -d "${NETBOOTDIR}" ]; then
 	msg_err "/boot/netboot is not mounted" 3
+elif [ ! -w "${NETBOOTDIR}" ]; then
+	msg_err "/boot/netboot is not writable" 4
 fi
 
 if [ -z "${VERSION}" ]; then
@@ -54,16 +60,21 @@ EOF
 # TODO: Add some "smarts" to this so that it can check the change time (with
 # `stat`) and compare that to the creation time of the U-Boot image (accessible
 # as a UTC timestamp with `mkimage -l`).
-msg_info "Creating U-Boot boot script."
-# Create a legacy U-Boot script image with dummy values for the OS and
-# architecture. Those two fields shouldn't matter to U-Boot when it loads the
-# file, and they fit better semantically than the defaults of a PowerPC Linux
-# image. A legacy image is also used as older U-Boot versions may not support
-# FIT images, or may not support the default property for scripts in FIT images.
-mkimage \
-	-T script \
-	-O u-boot \
-	-A invalid \
-	-d /usr/share/cluster-netboot/u-boot-script.txt \
-	"${NETBOOTDIR}/${CLUSTER_UBOOT_SCRIPT_NAME}" \
-	>&2
+if [ -x /usr/bin/mkimage ]; then
+	msg_info "Creating U-Boot boot script."
+	# Create a legacy U-Boot script image with dummy values for the OS and
+	# architecture. Those two fields shouldn't matter to U-Boot when it loads
+	# the file, and they fit better semantically than the defaults of a PowerPC
+	# Linux image. A legacy image is also used as older U-Boot versions may not
+	# support FIT images, or may not support the default property for scripts in
+	# FIT images.
+	mkimage \
+		-T script \
+		-O u-boot \
+		-A invalid \
+		-d /usr/share/cluster-netboot/u-boot-script.txt \
+		"${NETBOOTDIR}/${CLUSTER_UBOOT_SCRIPT_NAME}" \
+		>&2
+else
+	msg_warn "/usr/bin/mkimage isn't installed."
+fi
