@@ -10,4 +10,4 @@ RemainAfterExit=yes
 ExecStart=set-cluster-node-hostname
 # Create /var/hosts with a definition for this hostname
 # (/etc/hosts is symlinked to /var/hosts).
-ExecStart=sh -c "sed s/'[[:space:]]localhost\([[:space:]]\|$\)'/'   $(hostname) \0'/g /etc/hosts.template > /var/hosts"
+ExecStart=sh -c "sed s/'[[:space:]]localhost\\([[:space:]]\\|$\\)'/\"   $(hostname) \\0\"/g /etc/hosts.template > /var/hosts"
