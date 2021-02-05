@@ -1,3 +1,9 @@
+cluster-netboot (0.1.6) UNRELEASED; urgency=medium
+
+  * The U-Boot kernel hook only recreates the script image as needed now.
+
+ -- Will Ross <paxswill@paxswill.com>  Fri, 05 Feb 2021 14:53:31 -0500
+
 cluster-netboot (0.1.5) bullseye; urgency=medium
 
   * Use systemd-networkd to manage DHCP after initial boot.

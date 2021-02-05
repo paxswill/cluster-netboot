@@ -57,11 +57,24 @@ cat >"${NETBOOTDIR}/${UENV_TXT}" <<EOF
 boot_prefix=/kernel-${VERSION}-${_CLUSTER_NETBOOT_ARCH}
 EOF
 
-# TODO: Add some "smarts" to this so that it can check the change time (with
-# `stat`) and compare that to the creation time of the U-Boot image (accessible
-# as a UTC timestamp with `mkimage -l`).
-if [ -x /usr/bin/mkimage ]; then
-	msg_info "Creating U-Boot boot script."
+# Compare the script source file and the script image, creating the image file
+# only if the image file is outdated.
+SCRIPT_SOURCE="/usr/share/cluster-netboot/u-boot-script.txt"
+SCRIPT_DESTINATION="${NETBOOTDIR}/${CLUSTER_UBOOT_SCRIPT_NAME}"
+# Using input redirection so the output of sha1sum has "-" for the filename
+SOURCE_HASH="$(sha1sum < "$SCRIPT_SOURCE")"
+DESTINATION_HASH=
+if [ -f "$SCRIPT_DESTINATION" ]; then
+	# Cutting off the first 72 bytes strips the U-Boot image header off,
+	# leaving just the script contents.
+	DESTINATION_HASH="$(tail -c +73 "$SCRIPT_DESTINATION" | sha1sum)"
+fi
+if [ -x /usr/bin/mkimage ] && [ "$SOURCE_HASH" != "$DESTINATION_HASH" ]; then
+	if [ ! -f "$SCRIPT_DESTINATION" ]; then
+		msg_info "Creating U-Boot boot script."
+	else
+		msg_info "Updating U-Boot boot script."
+	fi
 	# Create a legacy U-Boot script image with dummy values for the OS and
 	# architecture. Those two fields shouldn't matter to U-Boot when it loads
 	# the file, and they fit better semantically than the defaults of a PowerPC
@@ -72,9 +85,13 @@ if [ -x /usr/bin/mkimage ]; then
 		-T script \
 		-O u-boot \
 		-A invalid \
-		-d /usr/share/cluster-netboot/u-boot-script.txt \
-		"${NETBOOTDIR}/${CLUSTER_UBOOT_SCRIPT_NAME}" \
+		-d "$SCRIPT_SOURCE" \
+		"$SCRIPT_DESTINATION" \
 		>&2
 else
-	msg_warn "/usr/bin/mkimage isn't installed."
+	if [ ! -x /usr/bin/mkimage ]; then
+		msg_warn "/usr/bin/mkimage isn't installed."
+	else
+		msg_info "U-Boot script current, skipping update."
+	fi
 fi
