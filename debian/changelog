@@ -1,3 +1,33 @@
+cluster-netboot (0.1.5) bullseye; urgency=medium
+
+  * Use systemd-networkd to manage DHCP after initial boot.
+  * Improve error handling in kernel and initramfs hook scripts when this
+    package has been removed.
+  * Add triggers for Raspberry Pi and U-Boot firmware updates.
+  * Activate trigger to update-initramfs.
+  * Link generated mount unit files to systemd targets.
+  * Revise how NFS server resolution works for generators, fixing multiple bugs
+    that were present.
+  * Fix systemd mount file installation.
+  * Netboot uEnv.txt files are now loaded in a way so that you can layer
+    settings with multiple files.
+  * Change /etc/machine-id from a symlink to a bind mount.
+  * Mark initramfs script for /var initialization as executable.
+  * Replace raspi-firmware hook scripts with empty shell scripts.
+  * Ensure postinst kernel hooks are called in order.
+  * Fix FDT detection in U-Boot boot script.
+  * Add specific version requirements for package dependencies.
+  * Rewrite config setup and integrate with debconf.
+  * Set a hostname a little later in the boot process.
+  * Fix multiple typos and small bugs in hook scripts and U-Boot script.
+  * Define a default script in the U-Boot source.
+  * Add a postinst script to ensure the kernel hooks are called.
+  * Fix DTB rsync filtering and destination.
+  * Fix rsync syncing *all* DTBs.
+  * Fix the destination for rsync's DTB syncing.
+
+ -- Will Ross <paxswill@paxswill.com>  Sat, 23 Jan 2021 13:32:11 -0500
+
 cluster-netboot (0.1.4) bullseye; urgency=medium
 
   * Remove more usages of DPKG_MAINTSCRIPT_ARCH
