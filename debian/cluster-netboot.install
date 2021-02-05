@@ -6,10 +6,10 @@ kernel/postinst.d/z-cluster-netboot			etc/kernel/postinst.d
 kernel/postinst.d/z-cluster-netboot-raspi			etc/kernel/postinst.d
 kernel/postinst.d/z-cluster-netboot-u-boot			etc/kernel/postinst.d
 kernel/postrm.d/z-cluster-netboot			etc/kernel/postrm.d
-sbin/generate-cluster-id			usr/sbin
-sbin/remount-root			usr/sbin
-sbin/update-firmware			usr/sbin
-systemd/*		usr/lib/systemd
+sbin/generate-cluster-id			sbin
+sbin/remount-root			sbin
+sbin/update-firmware			sbin
+systemd/*		lib/systemd
 cluster-netboot		usr/share
 initramfs-tools/conf-hooks.d/cluster-netboot		usr/share/initramfs-tools/conf-hooks.d
 initramfs-tools/scripts/init-premount/generate_hostname.sh		usr/share/initramfs-tools/scripts/init-premount

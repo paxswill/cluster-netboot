@@ -1,15 +1,13 @@
 #!/usr/bin/make -f
 # See debhelper(7) (uncomment to enable)
 # output every command that modifies files on the build system.
-#export DH_VERBOSE = 1
+export DH_VERBOSE = 1
 
 %:
 	dh $@ --with=config-package
 
 override_dh_installsystemd:
 	dh_installsystemd \
-		--name=tmp
-	dh_installsystemd \
-		--name=etc-iscsi-nodes
-	dh_installsystemd \
-		--name=etc-iscsi-send_targets
+		tmp.mount \
+		etc-iscsi-nodes.mount \
+		etc-iscsi-send_targets.mount
