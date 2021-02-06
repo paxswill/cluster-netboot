@@ -4,6 +4,7 @@ cluster-netboot (0.1.6) UNRELEASED; urgency=medium
   * Add systemd drop-in to minimize+fix waiting for network.
   * Add systemd drop-in to fix machine-id saving.
   * Add permanent symlink for /etc/mtap to /proc/self/mounts
+  * Mask apt daily timers.
 
  -- Will Ross <paxswill@paxswill.com>  Fri, 05 Feb 2021 14:53:31 -0500
 

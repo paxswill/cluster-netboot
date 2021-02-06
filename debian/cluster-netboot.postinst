@@ -81,6 +81,11 @@ if [ "$1" = "configure" ]; then
 
 	deb-systemd-helper enable systemd-resolved.service
 	deb-systemd-helper enable systemd-networkd.service
+	# These services don't really work on a read-only root FS
+	deb-systemd-helper mask apt-daily-upgrade.timer
+	deb-systemd-helper mask apt-daily-upgrade.service
+	deb-systemd-helper mask apt-daily.timer
+	deb-systemd-helper mask apt-daily.service
 elif [ "$1" = "triggered" ]; then
 	# There are two triggers this package declares interest in:
 	# * /usr/lib/raspi-firmware

@@ -9,6 +9,15 @@ set -e
 # development.
 CONFIGFILE="${CONFIGFILE:=/etc/cluster-netboot/config}"
 
+if [ "$1" = "remove" ]; then
+	# unmask these on removal (and deb-systemd-helper does magic with keeping
+	# track of if they were enabled already or not).
+	deb-systemd-helper unmask apt-daily-upgrade.timer
+	deb-systemd-helper unmask apt-daily-upgrade.service
+	deb-systemd-helper unmask apt-daily.timer
+	deb-systemd-helper unmask apt-daily.service
+fi
+
 if [ "$1" = "purge" ]; then
 	rm -f "$CONFIGFILE"
 	rm -f "${CONFIGFILE}.tmp"
