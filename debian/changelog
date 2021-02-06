@@ -1,4 +1,4 @@
-cluster-netboot (0.1.6) UNRELEASED; urgency=medium
+cluster-netboot (0.1.6) bullseye; urgency=medium
 
   * The U-Boot kernel hook only recreates the script image as needed now.
   * Add systemd drop-in to minimize+fix waiting for network.
