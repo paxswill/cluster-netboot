@@ -1,6 +1,7 @@
 fstab			etc
 nsswitch.conf	etc
 machine-id			etc
+mtab		etc
 initramfs/z-cluster-netboot		etc/initramfs/post-update.d
 kernel/postinst.d/z-cluster-netboot			etc/kernel/postinst.d
 kernel/postinst.d/z-cluster-netboot-raspi			etc/kernel/postinst.d
