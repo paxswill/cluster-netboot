@@ -91,6 +91,17 @@ if [ "$1" = "configure" ]; then
 	if [ -f /etc/hostname ]; then
 		mv /etc/hostname /etc/hostname.cluster-netboot.old
 	fi
+
+	# Create /boot/firmware so there's a place to mount node-specific firmware.
+	NODE_FIRMWARE=/boot/firmware
+	if [ ! -d "$NODE_FIRMWARE" ]; then
+		mkdir -p "$NODE_FIRMWARE"
+	fi
+	# If node-firmware isn't mounted over it (it's a normal file), make sure the
+	# permissions are correct.
+	if ! findmnt -fn /boot/netboot 2>&1 >/dev/null; then
+		chmod 555 "$NODE_FIRMWARE"
+	fi
 elif [ "$1" = "triggered" ]; then
 	# There are two triggers this package declares interest in:
 	# * /usr/lib/raspi-firmware

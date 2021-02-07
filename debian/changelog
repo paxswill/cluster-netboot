@@ -4,6 +4,7 @@ cluster-netboot (0.1.7) UNRELEASED; urgency=medium
   * Remove /etc/hostname in postinst to ensure it can be set at boot.
   * Fix Raspberry Pi firmware files not syncing.
   * Rewrite z-cluster-netboot kernel postinst hook in Python.
+  * Ensure /boot/firmware exists, but is read-only.
 
  -- Will Ross <paxswill@paxswill.com>  Sat, 06 Feb 2021 18:06:30 -0500
 
