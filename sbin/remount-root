@@ -23,18 +23,8 @@ if [ "$EUID" != "0" ]; then
 fi
 
 . /usr/share/cluster-netboot/load-config.sh
-if [ "$CLUSTER_NFS_SERVER" = "" ]; then
-	# This command is only safe to run on one of the nodes booted off of the
-	# shared root.
-	# The net-*.conf files are created in the initramfs during network booting.
-	# There *should* only be one, and its contents are options from network
-	# setup (like DHCP).
-	[ -f /run/net-*.conf ] && . /run/net-*.conf
-	if [ "$ROOTSERVER" = "" ]; then
-		CLUSTER_NFS_SERVER="${ROOTPATH#:*}"
-	else
-		CLUSTER_NFS_SERVER="$ROOTSERVER"
-	fi
+if [ -z "$CLUSTER_NFS_SERVER" ]; then
+	CLUSTER_NFS_SERVER="$(cluster_nfs_server_resolved /)"
 fi
 
 case "$ARCH" in
@@ -47,15 +37,15 @@ esac
 ROOT_DIR="/tmp/recursive_root_${ARCH}"
 log_exec $MKDIR "$ROOT_DIR"
 
-log_exec $MOUNT -t nfs -o rw "${NFS_SERVER}:${NFS_ROOT_PATH}" "$ROOT_DIR"
+log_exec $MOUNT -t nfs -o rw "${CLUSTER_NFS_SERVER}:${NFS_ROOT_PATH}" "$ROOT_DIR"
 
 # Mount the various special filesystems
-for FS in dev sys proc dev/pts; do
-	log_exec $MOUNT --bind /${FS} "${ROOT_DIR}/${FS}"
+for FS in dev sys proc; do
+	log_exec $MOUNT --rbind /${FS} "${ROOT_DIR}/${FS}"
 done
 
 # Mount firmware directories
-log_exec $MOUNT -t nfs -o rw "${NFS_SERVER}:${CLUSTER_NFS_NETBOOT_PATH}" ${ROOT_DIR}/boot/netboot
+log_exec $MOUNT -t nfs -o rw "${CLUSTER_NFS_SERVER}:${CLUSTER_NFS_NETBOOT_PATH}" ${ROOT_DIR}/boot/netboot
 if [ -d /boot/firmware ]; then
 	log_exec $MOUNT --bind /boot/firmware ${ROOT_DIR}/boot/firmware
 fi
@@ -68,7 +58,7 @@ if [ -d /boot/firmware ]; then
 fi
 log_exec $UMOUNT ${ROOT_DIR}/boot/netboot
 
-for FS in dev/pts dev sys proc; do
+for FS in dev sys proc; do
 	if [ -e "${ROOT_DIR}/${FS}" ]; then
 		log_exec $UMOUNT "${ROOT_DIR}/${FS}"
 	fi

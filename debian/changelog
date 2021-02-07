@@ -8,6 +8,7 @@ cluster-netboot (0.1.7) UNRELEASED; urgency=medium
   * Fix DTB pattern for OrangePi boards.
   * Fix Raspberry Pi kernel command line console definitions.
   * Add a board-specific uEnv file for U-Boot netbooting.
+  * Fix remount-root script to find the right NFS server.
 
  -- Will Ross <paxswill@paxswill.com>  Sat, 06 Feb 2021 18:06:30 -0500
 
