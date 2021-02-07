@@ -16,6 +16,11 @@ if [ "$1" = "remove" ]; then
 	deb-systemd-helper unmask apt-daily-upgrade.service
 	deb-systemd-helper unmask apt-daily.timer
 	deb-systemd-helper unmask apt-daily.service
+
+	OLD_HOSTNAME=/etc/hostname.cluster-netboot.old
+	if [ -f "$OLD_HOSTNAME" ]; then
+		mv "$OLD_HOSTNAME" /etc/hostname
+	fi
 fi
 
 if [ "$1" = "purge" ]; then

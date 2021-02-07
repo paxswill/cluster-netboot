@@ -86,6 +86,11 @@ if [ "$1" = "configure" ]; then
 	deb-systemd-helper mask apt-daily-upgrade.service
 	deb-systemd-helper mask apt-daily.timer
 	deb-systemd-helper mask apt-daily.service
+
+	# Move /etc/hostname out of the way
+	if [ -f /etc/hostname ]; then
+		mv /etc/hostname /etc/hostname.cluster-netboot.old
+	fi
 elif [ "$1" = "triggered" ]; then
 	# There are two triggers this package declares interest in:
 	# * /usr/lib/raspi-firmware
