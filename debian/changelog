@@ -1,5 +1,6 @@
 cluster-netboot (0.1.7) UNRELEASED; urgency=medium
 
+  * Add an intermediate initramfs step for populating the instance /var.
   * Fix Raspberry Pi firmware files not syncing.
   * Rewrite z-cluster-netboot kernel postinst hook in Python.
 

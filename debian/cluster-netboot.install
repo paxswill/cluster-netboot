@@ -13,9 +13,7 @@ sbin/update-firmware			sbin
 systemd/*		lib/systemd
 cluster-netboot		usr/share
 initramfs-tools/conf-hooks.d/cluster-netboot		usr/share/initramfs-tools/conf-hooks.d
-initramfs-tools/scripts/init-premount/generate_hostname.sh		usr/share/initramfs-tools/scripts/init-premount
-initramfs-tools/scripts/nfs-bottom/initialize-var.sh		usr/share/initramfs-tools/scripts/nfs-bottom
-initramfs-tools/scripts/nfs-bottom/mount-var-iscsi.sh		usr/share/initramfs-tools/scripts/nfs-bottom
+initramfs-tools/scripts/*		usr/share/initramfs-tools/scripts
 initramfs-tools/modules		etc/initramfs-tools
 raspi-firmware-override/z50-raspi-firmware	/etc/initramfs/post-update.d
 raspi-firmware-override/z50-raspi-firmware	/etc/kernel/postinst.d
