@@ -64,10 +64,10 @@ rsync \
 	--checksum \
 	--update \
 	--msgs2stderr \
-	"${FIRMWAREDIR}" \
-	"${NETBOOTDIR}"
+	${FIRMWAREDIR}/* \
+	${NETBOOTDIR}
 
-KERNELDIR="${NETBOOTDIR}/kernel-${VERSION}-${_CLUSTER_NETBOOT_ARCH}"
+KERNELDIR="kernel-${VERSION}-${_CLUSTER_NETBOOT_ARCH}/"
 CURRENT_KERNEL_FILE="current_kernel_${_CLUSTER_NETBOOT_ARCH}.txt"
 
 msg_info "Updating current kernel configuration at ${CURRENT_KERNEL_FILE}"
@@ -89,4 +89,4 @@ rsync \
 	"${NETBOOTDIR}/config.txt"
 
 # Update the RPi command line.
-echo "$CLUSTER_RASPI_CMDLINE" > "${NETBOOTDIR}/rpi_cmdline.txt"
+echo "$CLUSTER_RASPI_CMDLINE" > "${NETBOOTDIR}/rpi-cmdline.txt"
