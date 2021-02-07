@@ -1,4 +1,4 @@
-cluster-netboot (0.1.7) UNRELEASED; urgency=medium
+cluster-netboot (0.1.7) bullseye; urgency=medium
 
   * Add an intermediate initramfs step for populating the instance /var.
   * Remove /etc/hostname in postinst to ensure it can be set at boot.
