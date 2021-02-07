@@ -1,112 +1,163 @@
-#!/bin/sh
+#!/usr/bin/env python3
 
-set -e
-exec </dev/null >&2
+import sys
+# This is running as a kernel mainscript hook, and can't output to stdout.
+sys.stdout.close()
+sys.stdout = sys.stderr
 
-# Copy the kernel image, config, system map, and initramfs over to the netboot
-# filesystem.
+import functools
+import itertools
+import logging
+import os
+import pathlib
+import shlex
+import shutil
+import subprocess
+import typing
 
-VERSION="$1"
-NETBOOTDIR="/boot/netboot"
 
-msg_err() {
-	echo >&2 "E: cluster-netboot: $1"
-	exit $2
-}
+logging.basicConfig(
+    format="%(levelname)s: %(message)s",
+    stream=sys.stderr,
+)
+log = logging.getLogger("kernel_hook.z_cluster_netboot")
 
-msg_warn() {
-	echo >&2 "W: cluster-netboot: $1"
-}
 
-msg_info() {
-	echo >&2 "I: cluster-netboot: $1"
-}
+@functools.lru_cache(maxsize=1)
+def current_arch() -> str:
+    """Return the current dpkg architecture."""
+    dpkg = shutil.which("dpkg")
+    if not dpkg:
+        # default to what the path should be
+        dpkg = "/usr/bin/dpkg"
+    ret = subprocess.run(
+        [dpkg, "--print-architecture"],
+        capture_output=True,
+        text=True,
+    )
+    ret.check_returncode()
+    return ret.stdout.strip()
 
-# I'm not sure why, but DPKG_MAINTSCRIPT_ARCH is "all"...
-_CLUSTER_NETBOOT_ARCH="$(dpkg --print-architecture)"
 
-if ! [ -d "${NETBOOTDIR}" ]; then
-	# Violating Debian kernel hook guidelines for bootloaders (sec 8.2 in the
-	# Debian Linux Kernel Handbook) by exiting with a non-0 status when the
-	# bootloader is "disabled". In this case, I *want* to be alerted that the
-	# "bootloader" isn't being updated properly.
-	msg_err "/boot/netboot is not mounted" 3
-fi
+def kernel_files(
+    version: str,
+    kernel_path: typing.Optional[str],
+) -> typing.Sequence[pathlib.Path]:
+    """Return a sequence of the kernel paths to copy over.
+    
+    This includes the kernel file itself, as well as the initrd, kernel config,
+    and `System.map`.
+    """
+    # There's an optional second argument for kernel hooks; it's a path to the
+    # the kernel file. If it's not given (the case normally), the path can be
+    # assumed to be either `/boot/vmlinux-{version}` or
+    # `/boot/vmlinuz-{version}`, depending on the architecture (and for both
+    # armhf and arm64, it's vmlinuz).
+    boot = pathlib.Path("/boot")
+    kernel: pathlib.Path
+    if kernel_path is not None:
+        kernel = pathlib.Path(kernel_path)
+    else:
+        # Just being safe, in case there's a change we get vmlinux at some
+        # point.
+        for kernel_name in ("vmlinuz", "vmlinux"):
+            kernel = boot / f"{kernel_name}-{version}"
+            if kernel.exists():
+                break
+        else:
+            log.error("Unable to find kernel (version %s) in %s",
+                version,
+                boot,
+            )
+            raise FileNotFoundError(kernel)
+        boot = kernel.parent
+    other_files = ("config", "System.map", "initrd.img")
+    return [kernel] + [(boot / f"{file}-{version}") for file in other_files]
 
-if [ -z "${VERSION}" ]; then
-	msg_err "No kernel version given" 2
-fi
 
-# Have to put the dpkg arch in here as Ubuntu uses a "generic" kernel for 32 and
-# 64 bit ARM.
-KERNELDIR="${NETBOOTDIR}/kernel-${VERSION}-${_CLUSTER_NETBOOT_ARCH}"
+@functools.lru_cache(maxsize=1)
+def kernel_netboot_dir(version: str) -> pathlib.Path:
+    """Return the directory where kernel files are going to be installed."""
+    netboot = pathlib.Path("/boot/netboot")
+    if not netboot.is_dir():
+        log.error("%s is not mounted.", netboot)
+        raise FileNotFoundError(netboot)
+    if not netboot.is_mount():
+        log.warning("%s is not a mountpoint.", netboot)
+    # Ubuntu uses a single kernel package/name (linux-image-generic) for most of
+    # its kernels, so we need to include the architecture in here.
+    destination = netboot / f"kernel-{version}-{current_arch()}"
+    return destination
 
-# There's an optional second argument with a path to the kernel. If it's not
-# given, the path is either /boot/vmlinuz-$VERSION or /boot/vmlinux-$VERSION
-# For armhf and arm64, it's vmlinuz
-if [ -z "$2" ]; then
-	BOOTDIR="/boot"
-	if [ -e "${BOOTDIR}/vmlinuz-${VERSION}" ]; then
-		KERNELFILE="${BOOTDIR}/vmlinuz-${VERSION}"
-	else
-		msg_err "Unable to find kernel at ${BOOTDIR}/vmlinuz-${VERSION}" 4
-	fi
-else
-	BOOTDIR="$(dirname $2)"
-	KERNELFILE="$2"
-fi
-CONFIGFILE="${BOOTDIR}/config-${VERSION}"
-MAPFILE="${BOOTDIR}/System.map-${VERSION}"
-INITRAMFS="${BOOTDIR}/initrd.img-${VERSION}"
 
-# Cribbed from the initramfs-tools postinst script.
-# This avoids running the script mutliple times (see Debian Policy manual 
-# section 6.5 for the various arguments a postrm script can be given).
-if [ -n "$DEB_MAINT_PARAMS" ]; then
-	# This will clobber the old script parameters, but that's alright as they're
-	# already saved.
-	eval set -- "$DEB_MAINT_PARAMS"
-	if [ -z "$1" ] || [ "$1" != "configure" ]; then
-		exit 0
-	fi
-fi
+def device_trees(version: str) -> typing.Iterator[pathlib.Path]:
+    """An iterator of device tree files to copy over."""
+    # The default path for Debian
+    dtb_dir = pathlib.Path(f"/usr/lib/linux-image-{version}")
+    if not dtb_dir.is_dir():
+        # The default path for Ubuntu
+        dtb_dir = pathlib.Path(f"/usr/lib/firmware/{version}/device-tree")
+        if not dtb_dir.is_dir():
+            log.error("Unable to find device tree directory.")
+            raise FileNotFoundError(dtb_dir)
+    patterns_dir = pathlib.Path("cluster-netboot/dtb-patterns")
+    patterns_path: pathlib.Path
+    for base_dir in ("/etc", "/usr/share"):
+        patterns_path = base_dir / patterns_dir / current_arch()
+        if patterns_path.exists():
+            break
+    else:
+        log.error("Unable to find DTB patterns file.")
+        raise FileNotFoundError(patterns_path)
+    with patterns_path.open("r") as patterns_file:
+        for pattern in patterns_file:
+            pattern = pattern.strip()
+            # Skip comments and blank lines
+            if pattern.startswith("#") or not pattern:
+                continue
+            log.debug("Including DTBs matching pattern '%s'", pattern)
+            yield from dtb_dir.glob(pattern)
 
-mkdir -p "${KERNELDIR}"
 
-msg_info "Installing ${KERNELFILE} to ${KERNELDIR}/vmlinuz"
-cp -f "${KERNELFILE}" "${KERNELDIR}/vmlinuz"
-msg_info "Installing ${MAPFILE} to ${KERNELDIR}/System.map"
-cp -f "${MAPFILE}" "${KERNELDIR}/System.map"
-msg_info "Installing ${CONFIGFILE} to ${KERNELDIR}/config"
-cp -f "${CONFIGFILE}" "${KERNELDIR}/config"
-msg_info "Installing ${INITRAMFS} to ${KERNELDIR}/initrd.img"
-cp -f "${INITRAMFS}" "${KERNELDIR}/initrd.img"
+def main(version: str, kernel_path: typing.Optional[str] = None) -> None:
+    destination_dir = kernel_netboot_dir(version)
+    destination_dir.mkdir(exist_ok=True)
+    all_files = itertools.chain(
+        kernel_files(version, kernel_path),
+        device_trees(version)
+    )
+    version_suffix = f"-{version}"
+    for source_path in all_files:
+        destination_path = destination_dir / source_path.name
+        # trim off any version suffixes (should just be the kernel files)
+        if destination_path.name.endswith(version_suffix):
+            new_name = destination_path.name[:-len(version_suffix)]
+            destination_path = destination_path.with_name(new_name)
+        log.debug("Installing %s to %s", source_path, destination_path)
+        shutil.copy2(source_path, destination_path)
 
-DEVICE_TREE_DIR="/usr/lib/linux-image-${VERSION}"
-# Ubuntu uses a different directory for its device trees
-if ! [ -d "$DEVICE_TREE_DIR" ]; then
-	if [ -d "/usr/lib/firmware/${VERSION}/device-tree" ]; then
-		DEVICE_TREE_DIR="/usr/lib/firmware/${VERSION}/device-tree"
-	fi
-fi
 
-PATTERNS_DIR="cluster-netboot/dtb-patterns"
-DTBS_PATTERNS="/etc/${PATTERNS_DIR}/${_CLUSTER_NETBOOT_ARCH}"
-if ! [ -f "$DTBS_PATTERNS" ]; then
-	DTBS_PATTERNS="/usr/share/${PATTERNS_DIR}/${_CLUSTER_NETBOOT_ARCH}"
-fi
+def should_skip() -> bool:
+    """Determine if this invocation of the hook script should be skipped.
+    
+    Currently this just checks if the first word in the `DEB_MAINT_PARAMS`
+    environment variable is `configure`.
+    """
+    deb_maint_params = shlex.split(os.environ.get("DEB_MAINT_PARAMS", ""))
+    return len(deb_maint_params) > 1 and deb_maint_params[0] == "configure"
 
-if [ -e "$DTBS_PATTERNS" ]; then
-	rsync \
-		--archive \
-		--no-relative \
-		--copy-links \
-		--checksum \
-		--msgs2stderr \
-		--include-from="$DTBS_PATTERNS" \
-		--exclude='*' \
-		"$DEVICE_TREE_DIR"/ \
-		"$KERNELDIR"
-else
-	msg_warn "Missing DTB patterns file."
-fi
+
+if __name__ == "__main__":
+    # Set debugging logging early (if requested)
+    if os.environ.get("DPKG_MAINTSCRIPT_DEBUG", "0") == "1":
+        log.setLevel(logging.DEBUG)
+    if should_skip():
+        sys.exit(0)
+    if len(sys.argv) < 2:
+        log.error("Missing kernel version.")
+        sys.exit(1)
+    try:
+        main(*sys.argv[1:])
+    except FileNotFoundError as e:
+        log.error("%s", e)
+        sys.exit(2)
