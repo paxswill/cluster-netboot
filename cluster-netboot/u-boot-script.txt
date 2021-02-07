@@ -8,20 +8,18 @@ setenv boot_prefix /current
 setenv kernel_file vmlinuz
 setenv initrd_file initrd.img
 
-# loadnetenv will search for a uEnv.txt file to source from the TFTP root. First
-# it tries "uEnv-${serial#}.txt", then "uEnv-${arch}.txt" (when $arch == "arm",
-# "armhf" is used instead), and then finally "uEnv.txt". After the first
-# file is found, searching stops.
-# Whichever file is loaded, it must set the "boot_prefix" variable
-# appropriately. See the generated "uEnv-${arch}.txt" files for an example.
+# loadnetenv will search for a uEnv.txt file to source from the TFTP root.
+# It checks a series of files, loading them into the environment one after
+# another. These files are: "uEnv.txt", "uEnv-${arch}.txt" (when
+# $arch == "arm", "armhf" is used instead), "uEnv-${board}.txt", then
+# "uEnv-${serial#}.txt". This lets general to more specific settings to be
+# applied to different devices.
+# The "uEnv-${arch}.txt" file is special in that it sets the "boot_prefix"
+# variable and is automatically rewritten when new kernels are installed.
 setenv loadnetenv '
 setenv autoload no;
 if tftp ${scriptaddr} "uEnv.txt"; then
   echo "Importing environment from uEnv.txt";
-  env import -t ${scriptaddr} ${filesize};
-fi;
-if tftp ${scriptaddr} "uEnv-${serial#}.txt"; then
-  echo "Importing environment from uEnv-${serial#}.txt";
   env import -t ${scriptaddr} ${filesize};
 fi;
 if test "${arch}" -eq "arm"; then
@@ -31,6 +29,14 @@ else
 fi;
 if tftp ${scriptaddr} "uEnv-${uenv_arch}.txt"; then
   echo "Importing environment from uEnv-${uenv_arch}.txt";
+  env import -t ${scriptaddr} ${filesize};
+fi;
+if tftp ${scriptaddr} "uEnv-${board}.txt"; then
+  echo "Importing environment from uEnv-${board}.txt";
+  env import -t ${scriptaddr} ${filesize};
+fi;
+if tftp ${scriptaddr} "uEnv-${serial#}.txt"; then
+  echo "Importing environment from uEnv-${serial#}.txt";
   env import -t ${scriptaddr} ${filesize};
 fi;
 '
