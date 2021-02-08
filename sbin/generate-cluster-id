@@ -12,7 +12,7 @@ strip_null() {
 # sed expressions converting a model name to a prefix
 # NOTE: this command has to be able to run under Busybox, so no lowercasing
 # extensions to sed are available.
-RPI_PREFIX='s/Raspberry Pi \([[:digit:]]\) Model \([^[:space:]]\+\) Rev.*/rpi\1\2/'
+RPI_PREFIX='s/Raspberry Pi \([[:digit:]]\) Model \([^[:space:]]\+\).*/rpi\1\2/'
 BB_PREFIX='s/TI AM335x BeagleBone \([^[:space:]]\)[^[:space:]]\+.*$/bb\1/'
 
 get_prefix() {
