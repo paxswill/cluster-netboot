@@ -1,3 +1,10 @@
+cluster-netboot (0.1.8) UNRELEASED; urgency=medium
+
+  * Add check in initramfs that the root FS being used is for the correct
+    architecture.
+
+ -- Will Ross <paxswill@paxswill.com>  Mon, 08 Feb 2021 02:21:25 -0500
+
 cluster-netboot (0.1.7) bullseye; urgency=medium
 
   * Add an intermediate initramfs step for populating the instance /var.

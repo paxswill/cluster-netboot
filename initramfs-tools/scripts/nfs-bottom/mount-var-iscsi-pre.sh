@@ -1,5 +1,5 @@
 #!/bin/sh
-PREREQ=""
+PREREQ="check-root-arch.sh"
 prereqs()
 {
 	echo "$PREREQ"
