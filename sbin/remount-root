@@ -42,27 +42,17 @@ log_exec $MOUNT -t nfs -o rw "${CLUSTER_NFS_SERVER}:${NFS_ROOT_PATH}" "$ROOT_DIR
 # Mount the various special filesystems
 for FS in dev sys proc; do
 	log_exec $MOUNT --rbind /${FS} "${ROOT_DIR}/${FS}"
+	log_exec $MOUNT --make-rslave "${ROOT_DIR}/${FS}"
 done
 
 # Mount firmware directories
 log_exec $MOUNT -t nfs -o rw "${CLUSTER_NFS_SERVER}:${CLUSTER_NFS_NETBOOT_PATH}" ${ROOT_DIR}/boot/netboot
 if [ -d /boot/firmware ]; then
 	log_exec $MOUNT --bind /boot/firmware ${ROOT_DIR}/boot/firmware
+	log_exec $MOUNT --make-rslave ${ROOT_DIR}/boot/firmware
 fi
 
 chroot ${ROOT_DIR} /bin/bash
 
-# Now clean up
-if [ -d /boot/firmware ]; then
-	log_exec $UMOUNT ${ROOT_DIR}/boot/firmware
-fi
-log_exec $UMOUNT ${ROOT_DIR}/boot/netboot
-
-for FS in dev sys proc; do
-	if [ -e "${ROOT_DIR}/${FS}" ]; then
-		log_exec $UMOUNT "${ROOT_DIR}/${FS}"
-	fi
-done
-
-log_exec $UMOUNT "$ROOT_DIR"
+log_exec $UMOUNT -R "$ROOT_DIR"
 log_exec $RMDIR "$ROOT_DIR"

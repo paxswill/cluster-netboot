@@ -1,10 +1,11 @@
-cluster-netboot (0.1.8) UNRELEASED; urgency=medium
+cluster-netboot (0.1.8~dev1) UNRELEASED; urgency=medium
 
   * Add check in initramfs that the root FS being used is for the correct
     architecture.
   * Fix Raspberry Pi Model 2B support in generate-cluster-id.
+  * remount-root script now handles unmounting cleanly.
 
- -- Will Ross <paxswill@paxswill.com>  Mon, 08 Feb 2021 02:21:25 -0500
+ -- Will Ross <paxswill@paxswill.com>  Mon, 08 Feb 2021 11:58:59 -0500
 
 cluster-netboot (0.1.7) bullseye; urgency=medium
 
