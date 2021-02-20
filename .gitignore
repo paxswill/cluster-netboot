@@ -1,0 +1,9 @@
+existing-config
+# Various debhelper files and build directories
+debian/.debhelper/
+debian/*.debhelper
+debian/*.debhelper.log
+debian/*.substvars
+debian/debhelper-build-stamp
+debian/files
+debian/cluster-netboot
