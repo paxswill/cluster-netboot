@@ -49,10 +49,11 @@ setenv loadfdt '
 if test -n "${findfdt}"; then
   run findfdt;
 fi;
-if tftp ${fdt_addr_r} ${boot_prefix}/dtb/${fdtfile}; then
+echo "Loading device tree over TFTP...";
+if tftp ${fdt_addr_r} ${boot_prefix}/${fdtfile}; then
   setenv fdtaddr ${fdt_addr_r};
 else
-  if tftp ${fdt_addr_r} ${boot_prefix}/${fdtfile}; then
+  if tftp ${fdt_addr_r} ${boot_prefix}/dtb/${fdtfile}; then
     setenv fdtaddr ${fdt_addr_r};
   fi;
 fi;
@@ -63,8 +64,10 @@ fi;
 # afterwards.
 setenv netload '
 setenv autoload no;
+echo "Loading kernel image [${boot_prefix}/${kernel_file}] over TFTP...";
 tftp ${kernel_addr_r} ${boot_prefix}/${kernel_file};
 run loadfdt;
+echo "Loading initrd [${boot_prefix}/${initrd_file}] over TFTP...";
 tftp ${ramdisk_addr_r} ${boot_prefix}/${initrd_file};
 setenv initrdsize ${filesize};
 '
@@ -81,7 +84,7 @@ setenv netbootargs '
 echo "Booting from NFS mountpoint [${rootpath}]";
 setenv bootargs "root=/dev/nfs nfsroot=${rootpath} ip=dhcp rootwait ro console=${console} ${extrabootargs}";
 if test -n ${boardbootargs}; then
-    echo "Adding board-specific arguments";
+    echo "Adding board-specific arguments [${boardbootargs}]";
     setenv bootargs "${bootargs} ${boardbootargs}";
 fi;
 echo "Kernel arguments [${bootargs}]";'

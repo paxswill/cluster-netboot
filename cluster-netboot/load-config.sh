@@ -124,10 +124,10 @@ _expand_nfs_path CLUSTER_NFS_NETBOOT_PATH
 unset -f _expand_nfs_path
 
 # The path and name to the U-Boot boot script within the netboot root. Defaults
-# to "boot.scr" (meaning at the root of the netboot share). "boot.scr" is a
-# common default for U-Boot boot scripts to load over DHCP (if their
+# to "boot.scr.uimg" (meaning at the root of the netboot share). "boot.scr.uimg"
+# is a common default for U-Boot boot scripts to load over DHCP (if their
 # distro_bootcmd gets to bootcmd_dhcp).
-CLUSTER_UBOOT_SCRIPT_NAME="${CLUSTER_UBOOT_SCRIPT_NAME:-boot.scr}"
+CLUSTER_UBOOT_SCRIPT_NAME="${CLUSTER_UBOOT_SCRIPT_NAME:-boot.scr.uimg}"
 
 # The kernel command line used for Raspberry Pis that can natively netboot.
 # If not set, the default is "net.ifnames=0 console=ttyS0,115200n8 root=/dev/nfs
