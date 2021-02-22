@@ -16,18 +16,25 @@ set -e
 
 PREMOUNTPOINT=/tmp/instance-var-pre
 
-# Set /var/machine-id to contain "uninitialized\n" if that file does not already
-# exist. This is so the "ConditionFirstBoot" systemd condition will be set
-# appropriately. This action can't be done by systemd later in boot, because
+# Set /var/etc/machine-id to contain "uninitialized\n" if that file does not
+# already exist. This is so the "ConditionFirstBoot" systemd condition will be
+# set appropriately. This action can't be done by systemd later in boot, because
 # systemd checks for this file and the contents shortly after *it* starts.
-if ! [ -f "${PREMOUNTPOINT}/machine-id" ]; then
-	printf "uninitialized\n" > "${PREMOUNTPOINT}/machine-id"
-	log_success_msg "machine-id set to 'uninitialized'"
+if ! [ -f "${PREMOUNTPOINT}/etc/machine-id" ]; then
+	mkdir -p "${PREMOUNTPOINT}/etc"
+	# Older versions of cluster-netboot put machine-id in /var
+	if [ -f "${PREMOUNTPOINT}/machine-id" ]; then
+		mv "${PREMOUNTPOINT}/machine-id" "${PREMOUNTPOINT}/etc/machine-id"
+		log_success_msg "Migrated machine-id to new location"
+	else
+		printf "uninitialized\n" > "${PREMOUNTPOINT}/etc/machine-id"
+		log_success_msg "machine-id set to 'uninitialized'"
+	fi
 fi
 
 # Mount the node-specific machine=id over the places where systemd and dbus
 # expect it to be
-mount -o bind "${PREMOUNTPOINT}/machine-id" "${rootmnt}/etc/machine-id"
+mount -o bind "${PREMOUNTPOINT}/etc/machine-id" "${rootmnt}/etc/machine-id"
 if ! [ -e "${PREMOUNTPOINT}/lib/dbus/machine-id" ]; then
 	mkdir -p "${PREMOUNTPOINT}/lib/dbus"
 	ln -s ../../machine-id "${PREMOUNTPOINT}/lib/dbus/machine-id"
