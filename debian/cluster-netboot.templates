@@ -1,19 +1,19 @@
 Template: cluster-netboot/CLUSTER_NFS_SERVER
 Type: string
 Default:
-Description: The hostname or address of the NFS server.
+_Description: NFS server hostname or IP address:
  When not set, the address provided by the DHCP server will be used instead.
 
 Template: cluster-netboot/CLUSTER_NFS_BASE_PATH
 Type: string
 Default:/mnt/cluster
-Description: The base of the exported NFS path.
+_Description: NFS base path:
  The default paths of other configuration values will use this value.
 
 Template: cluster-netboot/CLUSTER_ISCSI_INITIATOR
 Type: string
 Default: 2020-12.com.paxswill.cluster-netboot
-Description: The date and domain for the iSCSI initiator.
+_Description: iSCSI initiator date and domain:
  It is encouraged for this to be set to a site-specific value. This is just the
  date and domain portion of the IQN. The "iqn." prefix and a node-specific
  suffix of ":node:NODE_ID" will be added (with NODE_ID being the MAC address of
@@ -25,7 +25,7 @@ Description: The date and domain for the iSCSI initiator.
 Template: cluster-netboot/CLUSTER_ISCSI_TARGET
 Type: string
 Default:
-Description: The date and domain for the iSCSI target.
+_Description: iSCSI target date and domain:
  If empty, the same value as the iSCSI initiator will be used, with the
  exception that the suffix for this value will be ":instance-data:NODE_ID"
  instead.
@@ -33,7 +33,7 @@ Description: The date and domain for the iSCSI target.
 Template: cluster-netboot/CLUSTER_NFS_ROOT_ARMHF_PATH
 Type: string
 Default: root/armhf
-Description: The exported path to the 32-bit ARM root filesystem.
+_Description: 32-bit ARM root NFS path:
  If the path starts with a forward slash, the path is interpreted as an
  absolute path exported from the NFS server. Otherwise, the path is
  interpreted as relative to the NFS base path.
@@ -41,7 +41,7 @@ Description: The exported path to the 32-bit ARM root filesystem.
 Template: cluster-netboot/CLUSTER_NFS_ROOT_ARM64_PATH
 Type: string
 Default: root/arm64
-Description: The exported path to the 64-bit ARM root filesystem.
+_Description: 64-bit ARM root NFS path:
  If the path starts with a forward slash, the path is interpreted as an
  absolute path exported from the NFS server. Otherwise, the path is
  interpreted as relative to the NFS base path.
@@ -49,28 +49,27 @@ Description: The exported path to the 64-bit ARM root filesystem.
 Template: cluster-netboot/CLUSTER_NFS_NETBOOT_PATH
 Type: string
 Default: netboot
-Description: The exported path to the netboot files directory.
+_Description: Netboot files NFS path:
  If the path starts with a forward slash, the path is interpreted as an
  absolute path exported from the NFS server. Otherwise, the path is
- interpreted as relative to the NFS base path.
+ interpreted as relative to the NFS base path. This should be the same path used as the TFTP server root.
 
 Template: cluster-netboot/CLUSTER_UBOOT_SCRIPT_NAME
 Type: string
 Default: boot.scr
-Description: The path to the U-Boot boot script within the netboot directory.
- "boot.scr" is a common default value for U-Boot to attempt to load over DHCP.
- It's unlikely that the default boot script will get that far without
- modification, but it does make setup a tiny bit easier.
+_Description: U-Boot script path:
+ "boot.scr.uimg" is a common default value for U-Boot to attempt to load over
+ DHCP. 
  .
  The contents of the boot script can be modified in
  "/etc/cluster-netboot/u-boot-script.txt". It is also possible to set options
  on a per-architecture and even per-device basis by creating specially named
- uEnv.txt within the netboot root. See the source of the boot script for more
- details.
+ uEnv.txt within the netboot root. See the source of the default boot script
+ for more details.
 
 Template: cluster-netboot/CLUSTER_RASPI_EXTRA_CMDLINE
 Type: string
-Description: Extra command line parameters for Raspberry Pis.
+_Description: Extra Raspberry Pi kernel command line:
  This option will only apply to Raspberry Pis that can natively netboot
  (basically 64-bit capable CPUs). This value will be appended to the end of the
  base kernel command line set in "/etc/defaults/cluster-netboot".

@@ -1,0 +1,163 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the cluster-netboot package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: cluster-netboot\n"
+"Report-Msgid-Bugs-To: cluster-netboot@packages.debian.org\n"
+"POT-Creation-Date: 2021-02-22 10:43-0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:1001
+msgid "NFS server hostname or IP address:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:1001
+msgid ""
+"When not set, the address provided by the DHCP server will be used instead."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:2001
+msgid "NFS base path:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:2001
+msgid "The default paths of other configuration values will use this value."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:3001
+msgid "iSCSI initiator date and domain:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:3001
+msgid ""
+"It is encouraged for this to be set to a site-specific value. This is just "
+"the date and domain portion of the IQN. The \"iqn.\" prefix and a node-"
+"specific suffix of \":node:NODE_ID\" will be added (with NODE_ID being the "
+"MAC address of the primary network interface, all lower-case, with colons "
+"removed). The quick version of the format is a year and month followed by a "
+"reverse DNS domain name of the form \"YYYY-MM.com.example\". See RFC 3720, "
+"section 3.2.6.3.1 for a full description of the format."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:4001
+msgid "iSCSI target date and domain:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:4001
+msgid ""
+"If empty, the same value as the iSCSI initiator will be used, with the "
+"exception that the suffix for this value will be \":instance-data:NODE_ID\" "
+"instead."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:5001
+msgid "32-bit ARM root NFS path:"
+msgstr ""
+
+#. Type: string
+#. Description
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:5001 ../cluster-netboot.templates:6001
+msgid ""
+"If the path starts with a forward slash, the path is interpreted as an "
+"absolute path exported from the NFS server. Otherwise, the path is "
+"interpreted as relative to the NFS base path."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:6001
+msgid "64-bit ARM root NFS path:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:7001
+msgid "Netboot files NFS path:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:7001
+msgid ""
+"If the path starts with a forward slash, the path is interpreted as an "
+"absolute path exported from the NFS server. Otherwise, the path is "
+"interpreted as relative to the NFS base path. This should be the same path "
+"used as the TFTP server root."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:8001
+msgid "U-Boot script path:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:8001
+msgid ""
+"\"boot.scr.uimg\" is a common default value for U-Boot to attempt to load "
+"over DHCP."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:8001
+msgid ""
+"The contents of the boot script can be modified in \"/etc/cluster-netboot/u-"
+"boot-script.txt\". It is also possible to set options on a per-architecture "
+"and even per-device basis by creating specially named uEnv.txt within the "
+"netboot root. See the source of the default boot script for more details."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:9001
+msgid "Extra Raspberry Pi kernel command line:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:9001
+msgid ""
+"This option will only apply to Raspberry Pis that can natively netboot "
+"(basically 64-bit capable CPUs). This value will be appended to the end of "
+"the base kernel command line set in \"/etc/defaults/cluster-netboot\"."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../cluster-netboot.templates:9001
+msgid ""
+"If you wish to customize config.txt for netbooting Raspberry Pis, modify \"/"
+"etc/cluster-netboot/raspi-config.txt\"."
+msgstr ""
