@@ -69,7 +69,7 @@ cat >"${OUTPUT_DIR}/boot-netboot.mount" <<EOF
 
 [Unit]
 Description=Add the (configured) /boot/netboot mount
-SourcePath=${ROOT_MOUNTPOINT}/etc/defaults/cluster-netboot
+SourcePath=${ROOT_MOUNTPOINT}/etc/cluster-netboot/config
 
 [Mount]
 Where=/boot/netboot
