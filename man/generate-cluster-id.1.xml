@@ -1,0 +1,78 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE manpage SYSTEM "https://gitlab.com/atsb/xmltoman/raw/master/xmltoman.dtd">
+<?xml-stylesheet type="text/xsl" href="https://gitlab.com/atsb/xmltoman/raw/master/xmltoman.xsl" ?>
+
+<manpage name="generate-cluster-id" section="1" desc="Generate cluster node identifiers">
+
+<synopsis>
+<cmd>generate-cluster-id [--mac [<arg>interface</arg>]] [--pretty]</cmd>
+<cmd>generate-cluster-id --serial [--pretty]</cmd>
+<cmd>set-cluster-node-hostname [--mac [<arg>interface</arg>]] [--no-pretty]</cmd>
+<cmd>set-cluster-node-hostname [--serial] [--no-pretty]</cmd>
+<cmd>(generate-cluster-id | set-cluster-node-hostname) --help</cmd>
+</synopsis>
+
+<description>
+<p>This script (with two names) generates a unique but stable identifier for
+cluster nodes. The primary use for this by cluster-netboot is to create iSCSI
+IQNs and a hostname. When invoked as generate-cluster-id, the generated
+identifier is printed to stdout. When invoked as set-cluster-node-hostname, the
+generated identifier is set as the current hostname (using
+<manref name="hostname" section="1" />).</p>
+</description>
+
+<options>
+
+<option>
+<p><opt>--mac | -m [<arg>interface</arg>]</opt></p>
+<optdesc>
+<p>Use a network interface's MAC address as the source for the
+identifier. If an interface name is not given, the first non-loopback, active
+interface will be chosen. All digits are lower-cased, and colons are removed.</p>
+<p>This is the default option (without a specific interface given) for both
+generate-cluster-id and set-cluster-node-hostname.</p>
+</optdesc>
+</option>
+
+<option>
+<p><opt>--serial</opt></p>
+<optdesc><p>Use the node's serial number as exposed by the device tree as the
+source for the unique identifier.</p></optdesc>
+</option>
+
+<option>
+<p><opt>--pretty | -p</opt></p>
+<optdesc>
+<p>Add a short prefix to the generated identifier to make it easier to
+distinguish between kinds of nodes. If the script is unable to determine a node
+prefix, 'unknown' is used instead.</p>
+<p>Currently Raspberry Pis are prefixed with 'rpi#_', where '#'' is the model
+number (1, 2, 3, etc) and '_' is the model kind (A, B, etc). BeagleBone Blacks
+and BeagleBone Greens will use 'bbb' and 'bbg' respectively.</p> 
+<p>This is the default option for set-cluster-node-hostname.</p>
+</optdesc> 
+</option>
+
+<option>
+<p><opt>--no-pretty | -P</opt></p>
+<optdesc>
+<p>Suppress adding the prefix described by <opt>--pretty</opt>.</p>
+<p>This is the default for generate-cluster-id.</p>
+</optdesc>
+</option>
+
+<option>
+<p><opt>--help | -h</opt></p>
+<optdesc><p>Print a short help message.</p></optdesc>
+</option>
+</options>
+
+<section name="Author">
+<p>Will Ross &lt;paxswill@paxswill.com&gt;</p>
+</section>
+
+<section name="See Also">
+<p><manref name="remount-root" section="8" /></p>
+</section>
+
+</manpage>

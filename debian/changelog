@@ -7,6 +7,7 @@ cluster-netboot (0.1.8~dev3) UNRELEASED; urgency=medium
   * Add more logging to U-Boot boot script.
   * Change default U-Boot boot script name to `boot.scr.uimg`.
   * Remove /usr prefix for set-cluster-node-hostname.
+  * Add manpages for generate-cluster-id and set-cluster-node-hostname.
 
  -- Will Ross <paxswill@paxswill.com>  Mon, 08 Feb 2021 11:58:59 -0500
 
