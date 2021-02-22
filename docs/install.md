@@ -195,7 +195,7 @@ Raspberry Pi firmware files works pretty well.
     sudo mount ${SDCARD}-part1 /mnt
     sudo cp /usr/lib/raspi-firmware/* /mnt/
     sudo cp /usr/share/cluster-netboot/raspi-config.txt /mnt/config.txt
-    sudo cp /uer/lib/u-boot/rpi_2/u-boot.bin /mnt/
+    sudo cp /usr/lib/u-boot/rpi_2/u-boot.bin /mnt/
     ```
 
 ## BeagleBone Black (and Green)
