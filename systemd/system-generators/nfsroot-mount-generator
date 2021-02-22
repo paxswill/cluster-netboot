@@ -110,4 +110,4 @@ EOF
 
 
 mkdir -p "${OUTPUT_DIR}/remote-fs.target.wants"
-ln -s "../${OUTPUT_DIR}/-.mount" "${OUTPUT_DIR}/remote-fs.target.wants/"
+ln -s "../-.mount" "${OUTPUT_DIR}/remote-fs.target.wants/-.mount"
