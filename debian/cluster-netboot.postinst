@@ -21,7 +21,7 @@ set -e
 
 # The parameter expansion here is to allow overriding the config file during
 # development.
-CONFIGFILE="${CONFIGFILE:=/etc/cluster-netboot/config}"
+: ${CONFIGFILE:=/etc/cluster-netboot/config}
 
 call_kernel_hook() {
 	# Run kernel hooks
