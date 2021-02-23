@@ -1,0 +1,22 @@
+[Unit]
+Description=Ensure each cluster node has its own SSH host keys.
+ConditionKernelCommandLine=root=/dev/nfs
+ConditionKernelCommandLine=nfsroot
+ConditionKernelCommandLine=ro
+# /var should already be mounted (as this will be running *after* initramfs).
+ConditionPathIsMountPoint=/var
+ConditionPathExists=/etc/ssh/sshd_config.d/var-etc-host-keys.conf
+RequiresMountsFor=/var
+Before=ssh.service
+
+[Install]
+RequiredBy=ssh.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=mkdir -p /var/etc/ssh
+ExecStart=/usr/bin/ssh-keygen -A -f /var
+# ssh-keygen -A will *always* have an exit status of 0, even if it fails to
+# create keys. This line just causes the unit to fail if there's a missing key.
+ExecStartPost=test -f /var/etc/ssh/ssh_host_ed25519_key

@@ -92,6 +92,9 @@ if [ "$1" = "configure" ]; then
 		mv /etc/hostname /etc/hostname.cluster-netboot.old
 	fi
 
+	# Remove any SSH host keys in the root FS
+	find /etc/ssh -name 'ssh_host_*_key*' -delete
+
 	# Create /boot/firmware so there's a place to mount node-specific firmware.
 	NODE_FIRMWARE=/boot/firmware
 	if [ ! -d "$NODE_FIRMWARE" ]; then

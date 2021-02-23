@@ -1,4 +1,4 @@
-cluster-netboot (0.1.8~dev3) UNRELEASED; urgency=medium
+cluster-netboot (0.1.8~dev4) UNRELEASED; urgency=medium
 
   * Add check in initramfs that the root FS being used is for the correct
     architecture.
@@ -8,6 +8,7 @@ cluster-netboot (0.1.8~dev3) UNRELEASED; urgency=medium
   * Change default U-Boot boot script name to `boot.scr.uimg`.
   * Remove /usr prefix for set-cluster-node-hostname.
   * Add manpages for generate-cluster-id and set-cluster-node-hostname.
+  * Ensure each node has unique SSH host keys.
 
  -- Will Ross <paxswill@paxswill.com>  Mon, 08 Feb 2021 11:58:59 -0500
 
